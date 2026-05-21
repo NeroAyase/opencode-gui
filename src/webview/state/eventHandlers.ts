@@ -6,7 +6,7 @@ import type {
   Session as SDKSession,
   PermissionRequest as SDKPermission,
   AssistantMessage,
-} from "@opencode-ai/sdk/v2/client";
+} from "@srdcloud/codefree-o-sdk/v2/client";
 import type { Message, MessagePart, Session, Permission } from "../types";
 import type { SyncState } from "./types";
 import { binarySearch, findById, extractTextFromParts } from "./utils";

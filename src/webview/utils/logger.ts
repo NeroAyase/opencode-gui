@@ -62,7 +62,7 @@ function log(level: "debug" | "info" | "error", message: string, data?: unknown)
   }
   
   // Always log to console as well for debugging
-  const prefix = `[OpenCode]`;
+  const prefix = `[CodeFree-O]`;
   const logData = serialized !== undefined ? [message, serialized] : [message];
   
   switch (level) {

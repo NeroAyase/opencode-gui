@@ -15,7 +15,7 @@
 VSCode extension with SolidJS webview. Two build targets:
 
 - **Extension** (`src/extension.ts`, `OpenCodeService.ts`, `OpenCodeViewProvider.ts`) - VSCode extension host
-- **Webview** (`src/webview/`) - SolidJS chat UI communicating via `@opencode-ai/sdk`
+- **Webview** (`src/webview/`) - SolidJS chat UI communicating via `@srdcloud/codefree-o-sdk`
 
 ## Code Style
 
@@ -51,10 +51,14 @@ Use the `pnpm run publish` script to publish the extension to the VSCode and OVS
 
 CRITICAL: If you try to run a command get an error related to the user not being logged into Gcloud e.g. `{"error":"invalid_grant","error_description":"reauth related error (invalid_rapt)","error_uri":"https://support.google.com/a/answer/9368756","error_subtype":"invalid_rapt"}`, then you MUST instruct the user to log into gcloud before you can continue.
 
-## Opencode SDK
+## CodeFree-O SDK
 
-This extension uses the Opencode SDK. Opencode (https://opencode.ai, https://github.com/anomalyco/opencode) is a coding agent employing a client-server architecture. The frontend for this extension acts as a client. The extension backend spawns the Opencode server as a separate Bun process.
+This extension uses the CodeFree-O SDK (`@srdcloud/codefree-o-sdk`), which is a fork of the Opencode SDK (`@opencode-ai/sdk`). CodeFree-O (https://www.srdcloud.cn/feedback/feedback) is a coding agent by China Telecom, employing a client-server architecture. The frontend for this extension acts as a client. The extension backend spawns the CodeFree-O server as a separate process.
 
-You will frequently find issues where some functionality from the SDK is not wired up correctly. For example, maybe context usage is not showing up properly b/c we're not parsing the right information from the SDK messages.
+The SDK is a strict superset of the Opencode SDK with full API compatibility. Key differences:
+- Spawns `codefree-o` instead of `opencode`
+- Uses `x-codefree-o-directory` header (backward compatible with `x-opencode-directory`)
+- Uses `x-codefree-o-workspace` header (backward compatible with `x-opencode-workspace`)
+- Adds AbortSignal support
 
-In these cases, use the Opencode TUI (https://github.com/anomalyco/opencode/tree/dev/packages/console) as the reference. This is a reference client implementation that understands and uses the SDK optimally. Use the librarian task to explore and research the TUI client implementation, getting back references to specific files you can use for your implementation.
+You will frequently find issues where some functionality from the SDK is not wired up correctly. In these cases, use the Opencode TUI (https://github.com/anomalyco/opencode/tree/dev/packages/console) as the reference implementation for SDK usage patterns.

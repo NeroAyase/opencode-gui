@@ -3,10 +3,10 @@ import { spawn, type ChildProcess } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 
-interface OpenCodeConfig {
+interface CodeFreeOConfig {
   serverUrl: string;
   workspaceRoot?: string;
-  opencodeConfig?: Record<string, unknown>;
+  codefreeOConfig?: Record<string, unknown>;
 }
 
 interface LogEntry {
@@ -18,7 +18,7 @@ interface LogEntry {
   metadata: Record<string, string>;
 }
 
-interface OpenCodeServer {
+interface CodeFreeOServer {
   url: string;
   process: ChildProcess;
   logs: string[];
@@ -28,13 +28,13 @@ interface OpenCodeServer {
   searchLogEntries: (filter: Partial<LogEntry>) => LogEntry[];
 }
 
-export interface OpenCodeWorkerFixtures {
-  opencodeServer: OpenCodeServer;
+export interface CodeFreeOWorkerFixtures {
+  codefreeOServer: CodeFreeOServer;
 }
 
-export interface OpenCodeFixtures {
-  openWebview: (config?: Partial<OpenCodeConfig>) => Promise<Page>;
-  serverLogs: OpenCodeServer["logs"];
+export interface CodeFreeOFixtures {
+  openWebview: (config?: Partial<CodeFreeOConfig>) => Promise<Page>;
+  serverLogs: CodeFreeOServer["logs"];
   getServerLogs: () => string;
   searchServerLogs: (pattern: string | RegExp) => boolean;
   getServerLogEntries: () => LogEntry[];
@@ -107,14 +107,14 @@ async function waitForServerReady(url: string, timeout = 10000): Promise<void> {
   throw new Error(`Server at ${url} did not become ready within ${timeout}ms`);
 }
 
-async function startOpenCodeServer(workspaceRoot: string): Promise<OpenCodeServer> {
+async function startCodeFreeOServer(workspaceRoot: string): Promise<CodeFreeOServer> {
   return new Promise((resolve, reject) => {
-    console.log(`[fixture] Spawning opencode serve in ${workspaceRoot}`);
+    console.log(`[fixture] Spawning codefree-o serve in ${workspaceRoot}`);
     
     const logs: string[] = [];
     
     const serverProcess = spawn(
-      "opencode",
+      "codefree-o",
       [
         "serve",
         "--port",
@@ -144,10 +144,10 @@ async function startOpenCodeServer(workspaceRoot: string): Promise<OpenCodeServe
       // Store logs for test access
       logs.push(text);
       
-      console.log(`[opencode] ${text.trim()}`);
+      console.log(`[codefree-o] ${text.trim()}`);
 
       // Look for the server URL in the output
-      // OpenCode outputs: "opencode server listening on http://127.0.0.1:XXXXX"
+      // CodeFree-O outputs: "codefree-o server listening on http://127.0.0.1:XXXXX"
       const urlMatch = outputBuffer.match(/listening on (http:\/\/[\d.:]+)/i);
       if (urlMatch && !serverUrl) {
         // Normalize 127.0.0.1 to localhost for browser compatibility
@@ -202,14 +202,14 @@ async function startOpenCodeServer(workspaceRoot: string): Promise<OpenCodeServe
     serverProcess.stderr?.on("data", handleOutput);
 
     serverProcess.on("error", (err) => {
-      reject(new Error(`Failed to start OpenCode server: ${err.message}`));
+      reject(new Error(`Failed to start CodeFree-O server: ${err.message}`));
     });
 
     serverProcess.on("exit", (code) => {
       if (!serverUrl) {
         reject(
           new Error(
-            `OpenCode server exited with code ${code} before providing URL. Output: ${outputBuffer}`
+            `CodeFree-O server exited with code ${code} before providing URL. Output: ${outputBuffer}`
           )
         );
       }
@@ -221,7 +221,7 @@ async function startOpenCodeServer(workspaceRoot: string): Promise<OpenCodeServe
         serverProcess.kill();
         reject(
           new Error(
-            `Timeout waiting for OpenCode server to start. Output: ${outputBuffer}`
+            `Timeout waiting for CodeFree-O server to start. Output: ${outputBuffer}`
           )
         );
       }
@@ -229,22 +229,22 @@ async function startOpenCodeServer(workspaceRoot: string): Promise<OpenCodeServe
   });
 }
 
-export const test = base.extend<OpenCodeFixtures, OpenCodeWorkerFixtures>({
+export const test = base.extend<CodeFreeOFixtures, CodeFreeOWorkerFixtures>({
   // Share the server across all tests in a worker
-  opencodeServer: [
+  codefreeOServer: [
     async ({}, use) => {
       // Use sandbox directory for tests by default
       const defaultRoot = path.join(process.cwd(), "tests", "sandbox");
-      const workspaceRoot = process.env.OPENCODE_WORKSPACE_ROOT || defaultRoot;
+      const workspaceRoot = process.env.CODEFREE_O_WORKSPACE_ROOT || defaultRoot;
       
       // Ensure sandbox directory exists
       if (!fs.existsSync(workspaceRoot)) {
         fs.mkdirSync(workspaceRoot, { recursive: true });
       }
       
-      console.log(`[fixture] Starting OpenCode server in ${workspaceRoot}`);
-      const server = await startOpenCodeServer(workspaceRoot);
-      console.log(`[fixture] OpenCode server started at ${server.url}`);
+      console.log(`[fixture] Starting CodeFree-O server in ${workspaceRoot}`);
+      const server = await startCodeFreeOServer(workspaceRoot);
+      console.log(`[fixture] CodeFree-O server started at ${server.url}`);
       
       // Wait for server to be fully ready
       await waitForServerReady(server.url);
@@ -252,34 +252,34 @@ export const test = base.extend<OpenCodeFixtures, OpenCodeWorkerFixtures>({
       await use(server);
 
       // Cleanup: kill the server after tests
-      console.log(`[fixture] Stopping OpenCode server`);
+      console.log(`[fixture] Stopping CodeFree-O server`);
       server.process.kill("SIGTERM");
     },
     { scope: "worker" },
   ],
 
-  openWebview: async ({ page, opencodeServer }, use) => {
-    const openWebview = async (config?: Partial<OpenCodeConfig>) => {
+  openWebview: async ({ page, codefreeOServer }, use) => {
+    const openWebview = async (config?: Partial<CodeFreeOConfig>) => {
       const defaultRoot = path.join(process.cwd(), "tests", "sandbox");
-      const workspaceRoot = process.env.OPENCODE_WORKSPACE_ROOT || defaultRoot;
+      const workspaceRoot = process.env.CODEFREE_O_WORKSPACE_ROOT || defaultRoot;
       
-      const defaultConfig: OpenCodeConfig = {
-        serverUrl: opencodeServer.url,
+      const defaultConfig: CodeFreeOConfig = {
+        serverUrl: codefreeOServer.url,
         workspaceRoot,
       };
 
       const finalConfig = { ...defaultConfig, ...config };
       
-      // If custom opencode config is provided, write it to the sandbox
-      if (finalConfig.opencodeConfig) {
-        const configPath = path.join(workspaceRoot, "opencode.json");
-        fs.writeFileSync(configPath, JSON.stringify(finalConfig.opencodeConfig, null, 2));
-        console.log(`[fixture] Wrote custom opencode.json to ${configPath}`);
+      // If custom codefree-o config is provided, write it to the sandbox
+      if (finalConfig.codefreeOConfig) {
+        const configPath = path.join(workspaceRoot, "codefree.json");
+        fs.writeFileSync(configPath, JSON.stringify(finalConfig.codefreeOConfig, null, 2));
+        console.log(`[fixture] Wrote custom codefree.json to ${configPath}`);
       }
       
       console.log(`[fixture] Opening webview with config:`, { 
         ...finalConfig, 
-        opencodeConfig: finalConfig.opencodeConfig ? "custom" : "default" 
+        codefreeOConfig: finalConfig.codefreeOConfig ? "custom" : "default" 
       });
 
       // Set up route to inject config before page loads
@@ -289,8 +289,8 @@ export const test = base.extend<OpenCodeFixtures, OpenCodeWorkerFixtures>({
         
         // Replace the default config with our dynamic config
         html = html.replace(
-          /window\.OPENCODE_CONFIG\s*=\s*\{[^}]+\}/,
-          `window.OPENCODE_CONFIG = ${JSON.stringify(finalConfig)}`
+          /window\.CODEFREE_O_CONFIG\s*=\s*\{[^}]+\}/,
+          `window.CODEFREE_O_CONFIG = ${JSON.stringify(finalConfig)}`
         );
         
         await route.fulfill({
@@ -315,24 +315,24 @@ export const test = base.extend<OpenCodeFixtures, OpenCodeWorkerFixtures>({
     await use(openWebview);
   },
 
-  serverLogs: async ({ opencodeServer }, use) => {
-    await use(opencodeServer.logs);
+  serverLogs: async ({ codefreeOServer }, use) => {
+    await use(codefreeOServer.logs);
   },
 
-  getServerLogs: async ({ opencodeServer }, use) => {
-    await use(opencodeServer.getLogs);
+  getServerLogs: async ({ codefreeOServer }, use) => {
+    await use(codefreeOServer.getLogs);
   },
 
-  searchServerLogs: async ({ opencodeServer }, use) => {
-    await use(opencodeServer.searchLogs);
+  searchServerLogs: async ({ codefreeOServer }, use) => {
+    await use(codefreeOServer.searchLogs);
   },
 
-  getServerLogEntries: async ({ opencodeServer }, use) => {
-    await use(opencodeServer.getLogEntries);
+  getServerLogEntries: async ({ codefreeOServer }, use) => {
+    await use(codefreeOServer.getLogEntries);
   },
 
-  searchServerLogEntries: async ({ opencodeServer }, use) => {
-    await use(opencodeServer.searchLogEntries);
+  searchServerLogEntries: async ({ codefreeOServer }, use) => {
+    await use(codefreeOServer.searchLogEntries);
   },
 });
 

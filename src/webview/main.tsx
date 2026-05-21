@@ -1,20 +1,20 @@
 import { render } from 'solid-js/web';
 import App from './App';
-import { OpenCodeProvider } from './hooks/useOpenCode';
+import { CodeFreeOProvider } from './hooks/useOpenCode';
 import { SyncProvider } from './state/sync';
 import './App.css';
 
 try {
   render(
     () => (
-      <OpenCodeProvider>
+      <CodeFreeOProvider>
         <SyncProvider>
           <App />
         </SyncProvider>
-      </OpenCodeProvider>
+      </CodeFreeOProvider>
     ),
     document.getElementById('root')!
   );
 } catch (error) {
-  console.error('[OpenCode] Error rendering webview:', error);
+  console.error('[CodeFree-O] Error rendering webview:', error);
 }

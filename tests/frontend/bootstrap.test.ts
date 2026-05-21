@@ -6,7 +6,7 @@ import type {
   Session as SDKSession,
   Message as SDKMessage,
   Part as SDKPart,
-} from "@opencode-ai/sdk/v2/client";
+} from "@srdcloud/codefree-o-sdk/v2/client";
 
 type AppApi = {
   agents(): Promise<{ data?: SDKAgent[] }>;

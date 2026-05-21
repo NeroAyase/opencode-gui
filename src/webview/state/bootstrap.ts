@@ -7,7 +7,7 @@ import type {
   Part as SDKPart,
   AssistantMessage,
   PermissionRequest as SDKPermission,
-} from "@opencode-ai/sdk/v2/client";
+} from "@srdcloud/codefree-o-sdk/v2/client";
 import type {
   Message,
   MessagePart,

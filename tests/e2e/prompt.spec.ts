@@ -19,7 +19,7 @@ test.describe("Prompt Sending", () => {
     const page = await openWebview();
     
     const textarea = page.getByRole("textbox", { name: "Message input" });
-    await textarea.fill("Hello, OpenCode!");
+    await textarea.fill("Hello, CodeFree-O!");
     
     const submitButton = page.getByRole("button", { name: "Submit" });
     await expect(submitButton).toBeEnabled();

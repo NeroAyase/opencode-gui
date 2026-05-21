@@ -25,7 +25,7 @@ test.describe.skip("Permissions", () => {
     }
   });
   test("should show permission card when tool needs approval", async ({ openWebview }) => {
-    const page = await openWebview({ opencodeConfig: restrictiveConfig });
+    const page = await openWebview({ codefreeOConfig: restrictiveConfig });
     
     // Send a prompt that will trigger a tool call requiring permission
     const textarea = page.getByRole("textbox", { name: "Message input" });
@@ -44,7 +44,7 @@ test.describe.skip("Permissions", () => {
   });
 
   test("should allow approving permission once", async ({ openWebview }) => {
-    const page = await openWebview({ opencodeConfig: restrictiveConfig });
+    const page = await openWebview({ codefreeOConfig: restrictiveConfig });
     
     const textarea = page.getByRole("textbox", { name: "Message input" });
     await textarea.fill("Run the command: echo 'hello from e2e test'");
@@ -64,7 +64,7 @@ test.describe.skip("Permissions", () => {
   });
 
   test("should allow rejecting permission", async ({ openWebview }) => {
-    const page = await openWebview({ opencodeConfig: restrictiveConfig });
+    const page = await openWebview({ codefreeOConfig: restrictiveConfig });
     
     const textarea = page.getByRole("textbox", { name: "Message input" });
     await textarea.fill("Run the command: echo 'this will be rejected'");
@@ -84,7 +84,7 @@ test.describe.skip("Permissions", () => {
   });
 
   test("should show inline permission for external directory", async ({ openWebview }) => {
-    const page = await openWebview({ opencodeConfig: restrictiveConfig });
+    const page = await openWebview({ codefreeOConfig: restrictiveConfig });
     
     // Send a prompt that will try to edit a file outside the workspace
     const textarea = page.getByRole("textbox", { name: "Message input" });

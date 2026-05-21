@@ -11,7 +11,7 @@ import {
   type FilePartInput,
   type AgentPartInput,
   type SubtaskPartInput,
-} from "@opencode-ai/sdk/v2/client";
+} from "@srdcloud/codefree-o-sdk/v2/client";
 
 import { hasVscodeApi, vscode } from "../utils/vscode";
 import { proxyFetch } from "../utils/proxyFetch";
@@ -50,7 +50,7 @@ function createOpenCode() {
 
   onMount(() => {
     // Check for standalone config (for E2E tests / web app)
-    const globalConfig = (window as { OPENCODE_CONFIG?: GlobalConfig }).OPENCODE_CONFIG;
+    const globalConfig = (window as { CODEFREE_O_CONFIG?: GlobalConfig }).CODEFREE_O_CONFIG;
     if (globalConfig?.serverUrl) {
       const opencodeClient = createOpencodeClient({
         baseUrl: globalConfig.serverUrl,
@@ -231,15 +231,15 @@ function createOpenCode() {
 }
 
 // Context
-const OpenCodeContext = createContext<ReturnType<typeof createOpenCode>>();
+const CodeFreeOContext = createContext<ReturnType<typeof createOpenCode>>();
 
-export function OpenCodeProvider(props: ParentProps) {
+export function CodeFreeOProvider(props: ParentProps) {
   const value = createOpenCode();
-  return <OpenCodeContext.Provider value={value}>{props.children}</OpenCodeContext.Provider>;
+  return <CodeFreeOContext.Provider value={value}>{props.children}</CodeFreeOContext.Provider>;
 }
 
-export function useOpenCode() {
-  const context = useContext(OpenCodeContext);
-  if (!context) throw new Error("useOpenCode must be used within OpenCodeProvider");
+export function useCodeFreeO() {
+  const context = useContext(CodeFreeOContext);
+  if (!context) throw new Error("useCodeFreeO must be used within CodeFreeOProvider");
   return context;
 }

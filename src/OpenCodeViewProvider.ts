@@ -16,7 +16,7 @@ import {
   SseLogger,
 } from "./transport/SseClient";
 
-const LAST_AGENT_KEY = "opencode.lastUsedAgent";
+const LAST_AGENT_KEY = "codefree-o.lastUsedAgent";
 
 interface DevServerConfig {
   origin: string;
@@ -27,7 +27,7 @@ interface DevServerConfig {
 }
 
 export class OpenCodeViewProvider implements vscode.WebviewViewProvider {
-  public static readonly viewType = "opencode.chatView";
+  public static readonly viewType = "codefree-o.chatView";
   private _view?: vscode.WebviewView;
   private _sseClients = new Map<string, SseClient>();
   private _proxyFetchControllers = new Map<string, AbortController>();
@@ -183,7 +183,7 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider {
     } catch (error) {
       const logger = getLogger();
       logger.error("[ViewProvider] Failed to open file", { url, error });
-      vscode.window.showErrorMessage("OpenCode: Failed to open file.");
+      vscode.window.showErrorMessage("CodeFree-O: Failed to open file.");
     }
   }
 
@@ -317,7 +317,7 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider {
       this._sendMessage({
         type: "sseError",
         id,
-        error: "OpenCode server URL not configured",
+        error: "CodeFree-O server URL not configured",
       } as HostMessage);
       return;
     }
@@ -340,7 +340,7 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider {
       this._sendMessage({
         type: "sseError",
         id,
-        error: "SSE only allowed to OpenCode server origin",
+        error: "SSE only allowed to CodeFree-O server origin",
       } as HostMessage);
       return;
     }
@@ -355,12 +355,12 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider {
       error: (msg, ...args) => logger.error(msg, ...args),
     };
 
-    // Build headers including x-opencode-directory
+    // Build headers including x-codefree-o-directory
     const headers: Record<string, string> = {};
     const workspaceRoot = this._openCodeService.getWorkspaceRoot();
     if (workspaceRoot) {
       // Encode directory as per SDK client (percent-encode non-ASCII)
-      headers["x-opencode-directory"] = encodeURIComponent(workspaceRoot);
+      headers["x-codefree-o-directory"] = encodeURIComponent(workspaceRoot);
     }
 
     const client = new SseClient(url, {
@@ -470,7 +470,7 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider {
         type: "proxyFetchResult",
         id,
         ok: false,
-        error: "Proxy fetch disabled: OpenCode server URL not configured",
+        error: "Proxy fetch disabled: CodeFree-O server URL not configured",
       } as HostMessage);
       return;
     }
@@ -495,7 +495,7 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider {
         type: "proxyFetchResult",
         id,
         ok: false,
-        error: "Proxy fetch only allowed to OpenCode server origin",
+        error: "Proxy fetch only allowed to CodeFree-O server origin",
       } as HostMessage);
       return;
     }
@@ -574,7 +574,7 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider {
   }
 
   private _getDevServerConfig(): DevServerConfig | null {
-    const raw = process.env.OPENCODE_DEV_SERVER_URL?.trim();
+    const raw = process.env.CODEFREE_O_DEV_SERVER_URL?.trim();
     if (!raw) return null;
 
     try {
@@ -601,7 +601,7 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider {
         wsOrigin: wsUrl.origin,
       };
     } catch {
-      getLogger().warn("[ViewProvider] Invalid OPENCODE_DEV_SERVER_URL; falling back to bundled webview");
+      getLogger().warn("[ViewProvider] Invalid CODEFREE_O_DEV_SERVER_URL; falling back to bundled webview");
       return null;
     }
   }
@@ -614,7 +614,7 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider {
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' ${devServerConfig.origin}; script-src 'unsafe-inline' ${devServerConfig.origin}; connect-src ${devServerConfig.origin} ${devServerConfig.wsOrigin} http://127.0.0.1:* ws://127.0.0.1:* http://localhost:* ws://localhost:* ${webview.cspSource};">
-          <title>OpenCode</title>
+          <title>CodeFree-O</title>
         </head>
         <body>
           <div id="root"></div>
@@ -640,7 +640,7 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${webview.cspSource} 'unsafe-inline'; script-src 'nonce-${nonce}'; connect-src http://127.0.0.1:* ws://127.0.0.1:* http://localhost:* ws://localhost:* ${webview.cspSource};">
         <link href="${styleUri}" rel="stylesheet">
-        <title>OpenCode</title>
+        <title>CodeFree-O</title>
       </head>
       <body>
         <div id="root"></div>

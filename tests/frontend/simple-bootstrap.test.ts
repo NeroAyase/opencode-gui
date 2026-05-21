@@ -4,7 +4,7 @@ import { fetchBootstrapData, type BootstrapContext } from "../../src/webview/sta
 import type {
   Agent as SDKAgent,
   Session as SDKSession,
-} from "@opencode-ai/sdk/v2/client";
+} from "@srdcloud/codefree-o-sdk/v2/client";
 
 type AppApi = {
   agents(): Promise<{ data?: SDKAgent[] }>;

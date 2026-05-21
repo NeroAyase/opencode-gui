@@ -11,7 +11,7 @@ import * as path from "path";
 import * as fs from "fs";
 import * as fsPromises from "fs/promises";
 
-const TMUX_SESSION = "opencode-dev";
+const TMUX_SESSION = "codefree-o-dev";
 const CDP_PORT = 9222;
 const VITE_DEV_PORT = 5173;
 const VITE_DEV_URL = `http://localhost:${VITE_DEV_PORT}`;
@@ -135,7 +135,7 @@ async function waitForWebviewFrame(
   }
   throw new Error(
     `Could not find webview active-frame within ${timeoutMs}ms. ` +
-      `Make sure the OpenCode sidebar is visible in VSCode.`
+      `Make sure the CodeFree-O sidebar is visible in VSCode.`
   );
 }
 
@@ -207,7 +207,7 @@ async function launchVSCode(): Promise<void> {
     env: {
       ...process.env,
       VSCODE_LOG_LEVEL: "info",
-      OPENCODE_DEV_SERVER_URL: VITE_DEV_URL,
+      CODEFREE_O_DEV_SERVER_URL: VITE_DEV_URL,
     },
   });
 
@@ -385,7 +385,7 @@ const program = new Command();
 program
   .name("dev")
   .description(
-    "Launch VSCode with the OpenCode extension and interact via Playwright"
+    "Launch VSCode with the CodeFree-O extension and interact via Playwright"
   );
 
 program

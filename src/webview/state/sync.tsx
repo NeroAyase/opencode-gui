@@ -15,7 +15,7 @@ import {
   type ParentProps,
 } from "solid-js";
 import { createStore, produce } from "solid-js/store";
-import { useOpenCode, type Event, type SSEStatus } from "../hooks/useOpenCode";
+import { useCodeFreeO, type Event, type SSEStatus } from "../hooks/useOpenCode";
 import type { Message, Permission } from "../types";
 import { type SyncState, type SyncStatus, createEmptyState } from "./types";
 import { applyEvent, type EventHandlerContext } from "./eventHandlers";
@@ -25,7 +25,7 @@ import { logger } from "../utils/logger";
 export type { SyncStatus } from "./types";
 
 function createSync() {
-  const sdk = useOpenCode();
+  const sdk = useCodeFreeO();
   const [store, setStore] = createStore<SyncState>(createEmptyState());
   const [currentSessionId, setCurrentSessionIdInternal] = createSignal<string | null>(null);
   const [sseCleanup, setSseCleanup] = createSignal<(() => void) | null>(null);

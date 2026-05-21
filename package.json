@@ -1,13 +1,13 @@
 {
-  "name": "opencode-vscode",
-  "displayName": "OpenCode GUI",
-  "description": "OpenCode AI coding agent for VSCode GUI extension",
+  "name": "codefree-o-vscode",
+  "displayName": "CodeFree-O GUI",
+  "description": "CodeFree-O AI coding agent for VSCode GUI extension (unofficial)",
   "version": "0.4.3",
-  "publisher": "TanishqKancharla",
+  "publisher": "NeroAyase",
   "icon": "media/logo.png",
   "repository": {
     "type": "git",
-    "url": "https://github.com/saffron-health/opencode-vscode-extension.git"
+    "url": "https://github.com/NeroAyase/codefree-o-gui.git"
   },
   "engines": {
     "vscode": "^1.74.0"
@@ -22,32 +22,32 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "opencode",
-          "title": "OpenCode",
+          "id": "codefree-o",
+          "title": "CodeFree-O",
           "icon": "media/icon.svg"
         }
       ]
     },
     "views": {
-      "opencode": [
+      "codefree-o": [
         {
           "type": "webview",
-          "id": "opencode.chatView",
+          "id": "codefree-o.chatView",
           "name": ""
         }
       ]
     },
     "commands": [
       {
-        "command": "opencode.addSelectionToPrompt",
+        "command": "codefree-o.addSelectionToPrompt",
         "title": "Add Selection to Prompt",
-        "category": "OpenCode"
+        "category": "CodeFree-O"
       }
     ],
     "menus": {
       "editor/context": [
         {
-          "command": "opencode.addSelectionToPrompt",
+          "command": "codefree-o.addSelectionToPrompt",
           "when": "editorTextFocus",
           "group": "navigation@9"
         }
@@ -97,7 +97,7 @@
   },
   "dependencies": {
     "@floating-ui/dom": "^1.7.5",
-    "@opencode-ai/sdk": "^1.2.14",
+    "@srdcloud/codefree-o-sdk": "^1.1.0",
     "@tiptap/core": "^2.27.2",
     "@tiptap/extension-document": "^2.27.2",
     "@tiptap/extension-mention": "^2.27.2",

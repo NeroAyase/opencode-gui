@@ -8,7 +8,7 @@ import {
   getWebviewLogs,
 } from './fixtures';
 
-describe('OpenCode Extension Integration', () => {
+describe('CodeFree-O Extension Integration', () => {
   // Setup fixture - launches VSCode with extension
   const fixture = useExtensionFixture({
     workspaceRoot: undefined, // Use default sandbox
@@ -17,7 +17,7 @@ describe('OpenCode Extension Integration', () => {
 
   test('extension should activate', async () => {
     const logs = await getExtensionLogs();
-    expect(logs).toContain('OpenCode extension activated');
+    expect(logs).toContain('CodeFree-O extension activated');
   });
 
   test('webview should be loaded', async () => {
@@ -26,8 +26,8 @@ describe('OpenCode Extension Integration', () => {
     expect(title).toBeTruthy();
   });
 
-  test('should execute opencode.addSelectionToPrompt command', async () => {
-    await executeCommand('opencode.addSelectionToPrompt');
+  test('should execute codefree-o.addSelectionToPrompt command', async () => {
+    await executeCommand('codefree-o.addSelectionToPrompt');
     
     // Check that command was processed
     const logs = await getExtensionLogs();
@@ -58,8 +58,8 @@ describe('OpenCode Extension Integration', () => {
     expect(userAgent).toContain('Chrome');
   });
 
-  test('should open OpenCode view via command', async () => {
-    await executeCommand('workbench.view.extension.opencode');
+  test('should open CodeFree-O view via command', async () => {
+    await executeCommand('workbench.view.extension.codefree-o');
     
     // Wait for view to open
     await new Promise(resolve => setTimeout(resolve, 500));
@@ -80,12 +80,12 @@ describe('OpenCode Extension Integration', () => {
     expect(testLog).toBeDefined();
   });
 
-  test('should have access to OpenCode SDK in webview', async () => {
-    const hasOpenCode = await evaluateInWebview<boolean>(
-      'typeof window.OPENCODE_CONFIG !== "undefined"'
+  test('should have access to CodeFree-O SDK in webview', async () => {
+    const hasCodeFreeO = await evaluateInWebview<boolean>(
+      'typeof window.CODEFREE_O_CONFIG !== "undefined"'
     );
     // This might be false for the VSCode webview vs standalone
     // Just checking we can evaluate this
-    expect(typeof hasOpenCode).toBe('boolean');
+    expect(typeof hasCodeFreeO).toBe('boolean');
   });
 });

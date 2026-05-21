@@ -7,13 +7,13 @@ import { downloadAndUnzipVSCode, resolveCliPathFromVSCodeExecutablePath } from '
 import * as path from 'path';
 import * as fs from 'fs/promises';
 
-const TMUX_SESSION = 'opencode-debug';
+const TMUX_SESSION = 'codefree-o-debug';
 
 const program = new Command();
 
 program
   .name('debug-extension')
-  .description('Launch VSCode with the OpenCode extension in a background tmux session')
+  .description('Launch VSCode with the CodeFree-O extension in a background tmux session')
   .option('-w, --workspace <path>', 'Workspace to open', process.cwd())
   .option('-p, --port <number>', 'CDP port', '9222')
   .option('--clean', 'Clean user data before launch')
@@ -106,7 +106,7 @@ async function launchVSCode() {
 }
 
 async function streamExtensionLogs(userDataDir: string) {
-  const logPath = path.join(userDataDir, 'logs', 'window1', 'exthost', 'output_logging_opencode');
+  const logPath = path.join(userDataDir, 'logs', 'window1', 'exthost', 'output_logging_codefree-o');
   let lastSize = 0;
 
   const interval = setInterval(async () => {
@@ -132,7 +132,7 @@ async function attachToWebview(cdpUrl: string) {
   for (let i = 0; i < 20 && !webviewPage; i++) {
     for (const ctx of browser.contexts()) {
       for (const page of ctx.pages()) {
-        if (page.url().includes('vscode-webview') && page.url().includes('opencode')) {
+        if (page.url().includes('vscode-webview') && page.url().includes('codefree-o')) {
           webviewPage = page;
           break;
         }
@@ -146,7 +146,7 @@ async function attachToWebview(cdpUrl: string) {
   }
 
   if (!webviewPage) {
-    console.error('Could not find OpenCode webview');
+    console.error('Could not find CodeFree-O webview');
     return null;
   }
 

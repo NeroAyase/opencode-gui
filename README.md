@@ -1,25 +1,19 @@
-# OpenCode VSCode Extension
+# CodeFree-O VSCode Extension (Unofficial)
 
-[Install for VSCode](https://marketplace.visualstudio.com/items?itemName=TanishqKancharla.opencode-vscode&ssr=false#review-details)
+A VSCode sidebar extension for [CodeFree-O](https://www.srdcloud.cn/feedback/feedback) - the AI coding agent by China Telecom. Simple chat interface to interact with CodeFree-O directly from your sidebar.
 
-A VSCode sidebar extension for OpenCode - the AI coding agent. Simple chat interface to interact with OpenCode directly from your sidebar.
+![CodeFree-O VSCode Extension Preview](media/preview.png)
 
-![OpenCode VSCode Extension Preview](media/preview.png)
-
-> **Note**: This is an independent community project and is not officially affiliated with or maintained by the OpenCode team.
+> **Note**: This is an independent community project and is not officially affiliated with or maintained by China Telecom / SRD Cloud.
 
 ## Prerequisites
 
-1. **OpenCode CLI must be installed**:
+1. **CodeFree-O CLI must be installed**:
    ```bash
-   curl -fsSL https://opencode.ai/install | bash
+   npm install -g @srdcloud/codefree-o
    ```
 
-2. **OpenCode must be configured** with API credentials:
-   ```bash
-   opencode auth login
-   ```
-   Select your provider (OpenCode Zen, Anthropic, OpenAI, etc.) and add your API key.
+2. **CodeFree-O must be configured** with API credentials. Create or edit `~/.codefree-o/.config/codefree.json` with your provider settings.
 
 ## Development Setup
 
@@ -49,7 +43,7 @@ This builds both:
    - Or open Run and Debug panel (`Cmd+Shift+D`) and click "Run Extension"
 
 3. **Use the extension**:
-   - Look for the OpenCode icon in the Activity Bar (left side)
+   - Look for the CodeFree-O icon in the Activity Bar (left side)
    - Click it to open the sidebar
    - Type a message and hit Send or press Enter
 
@@ -79,16 +73,16 @@ This builds both:
 ┌─────────────────────────────────────┐
 │  Extension Host (Node.js)           │
 │  - OpenCodeService                  │
-│    ├─ Manages OpenCode client      │
+│    ├─ Manages CodeFree-O client    │
 │    ├─ Creates sessions              │
 │    └─ Sends prompts                 │
 └──────────┬──────────────────────────┘
-           │ @opencode-ai/sdk
+           │ @srdcloud/codefree-o-sdk
            ▼
 ┌─────────────────────────────────────┐
-│  OpenCode Server (Bun process)      │
+│  CodeFree-O Server (Bun process)    │
 │  - Spawned by extension backend     │
-│  - Uses workspace opencode.json     │
+│  - Uses workspace codefree.json     │
 │  - Handles AI interactions          │
 └─────────────────────────────────────┘
 ```
@@ -97,7 +91,7 @@ This builds both:
 
 **Extension Side (TypeScript/ESM):**
 - `src/extension.ts`: Entry point, initializes OpenCodeService
-- `src/OpenCodeService.ts`: Manages OpenCode client/server, sessions, and prompts
+- `src/OpenCodeService.ts`: Manages CodeFree-O client/server, sessions, and prompts
 - `src/OpenCodeViewProvider.ts`: Webview provider, handles message passing
 
 **Webview Side (SolidJS):**
@@ -111,12 +105,13 @@ This builds both:
 ## Configuration
 
 The extension automatically uses:
-1. Workspace `opencode.json` (if present in project root)
-2. Global OpenCode config at `~/.config/opencode/opencode.json`
+1. Workspace `codefree.json` (if present in project root)
+2. Global CodeFree-O config at `~/.codefree-o/.config/codefree.json`
 
 Example workspace config:
 ```json
 {
+  "$schema": "https://opencode.ai/config.json",
   "model": "anthropic/claude-3-5-sonnet-20241022",
   "mcp": {
     // MCP server configurations
@@ -127,10 +122,10 @@ Example workspace config:
 ## Project Structure
 
 ```
-opencode-gui/
+codefree-o-gui/
 ├── src/
 │   ├── extension.ts              # Extension entry point
-│   ├── OpenCodeService.ts        # OpenCode client/server manager
+│   ├── OpenCodeService.ts        # CodeFree-O client/server manager
 │   ├── OpenCodeViewProvider.ts   # Webview provider
 │   └── webview/                  # SolidJS UI
 │       ├── App.tsx               # Chat component
@@ -150,11 +145,11 @@ opencode-gui/
 
 ## Tech Stack
 
-- **Extension**: TypeScript (ESM), VSCode Extension API, OpenCode SDK
+- **Extension**: TypeScript (ESM), VSCode Extension API, CodeFree-O SDK
 - **Webview**: SolidJS, TypeScript
 - **Build**: Vite for both extension and webview
 - **Styling**: CSS with VSCode theme variables
-- **Server**: Bun (spawned process running OpenCode server)
+- **Server**: Bun (spawned process running CodeFree-O server)
 
 ## Features
 
@@ -193,15 +188,19 @@ This publishes to both VS Code Marketplace and Open VSX Registry.
 
 ## Troubleshooting
 
-**"Failed to start OpenCode"**
-- Install OpenCode CLI: https://opencode.ai/install
-- Make sure OpenCode CLI is installed and on PATH:
-  - macOS/Linux: `which opencode`
-  - Windows: `where opencode`
-- Configure authentication: `opencode auth login`
-- If you installed OpenCode recently, fully restart VS Code so the extension host gets the updated PATH
+**"Failed to start CodeFree-O"**
+- Install CodeFree-O CLI: `npm install -g @srdcloud/codefree-o`
+- Make sure CodeFree-O CLI is installed and on PATH:
+  - macOS/Linux: `which codefree-o`
+  - Windows: `where codefree-o`
+- Configure authentication in `~/.codefree-o/.config/codefree.json`
+- If you installed CodeFree-O recently, fully restart VS Code so the extension host gets the updated PATH
 
 **"No response received"**
 - Check API credentials are valid
 - Verify workspace has internet connection
 - Check VSCode Developer Console for errors (Help → Toggle Developer Tools)
+
+## Feedback & Issues
+
+Report issues or provide feedback at: https://www.srdcloud.cn/feedback/feedback

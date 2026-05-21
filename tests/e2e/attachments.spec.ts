@@ -130,7 +130,7 @@ test.describe("Attachment/Selection Parity", () => {
     const page = await openWebview();
 
     // Use a real file from the workspace
-    const workspaceRoot = process.env.OPENCODE_WORKSPACE_ROOT || process.cwd();
+    const workspaceRoot = process.env.CODEFREE_O_WORKSPACE_ROOT || process.cwd();
     const filePath = "package.json";
     const fileUrl = `file://${workspaceRoot}/package.json`;
 

@@ -11,10 +11,10 @@ export function getLogger(): vscode.LogOutputChannel {
 
 export async function activate(context: vscode.ExtensionContext) {
   // Create log channel - VSCode manages file location and timestamps automatically
-  logger = vscode.window.createOutputChannel("OpenCode", { log: true });
+  logger = vscode.window.createOutputChannel("CodeFree-O", { log: true });
   context.subscriptions.push(logger);
 
-  logger.info("OpenCode extension activated", {
+  logger.info("CodeFree-O extension activated", {
     timestamp: new Date().toISOString(),
     workspaceFolder: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
     extensionPath: context.extensionPath,
@@ -28,9 +28,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
   try {
     await openCodeService.initialize(workspaceRoot);
-    logger.info("OpenCode service initialized successfully");
+    logger.info("CodeFree-O service initialized successfully");
   } catch (error) {
-    logger.error("Failed to initialize OpenCode service", error);
+    logger.error("Failed to initialize CodeFree-O service", error);
   }
 
   const provider = new OpenCodeViewProvider(
@@ -47,11 +47,11 @@ export async function activate(context: vscode.ExtensionContext) {
   );
 
   const addSelectionDisposable = vscode.commands.registerCommand(
-    "opencode.addSelectionToPrompt",
+    "codefree-o.addSelectionToPrompt",
     async () => {
       const editor = vscode.window.activeTextEditor;
       if (!editor) {
-        vscode.window.showInformationMessage("OpenCode: No active editor selection.");
+        vscode.window.showInformationMessage("CodeFree-O: No active editor selection.");
         return;
       }
 
@@ -75,7 +75,7 @@ export async function activate(context: vscode.ExtensionContext) {
             },
       };
 
-      await vscode.commands.executeCommand("workbench.view.extension.opencode");
+      await vscode.commands.executeCommand("workbench.view.extension.codefree-o");
       provider.sendHostMessage(message);
     }
   );
@@ -85,9 +85,9 @@ export async function activate(context: vscode.ExtensionContext) {
   // Cleanup on deactivation
   context.subscriptions.push(openCodeService);
 
-  logger.info("OpenCode webview provider registered");
+  logger.info("CodeFree-O webview provider registered");
 }
 
 export function deactivate() {
-  logger?.info("OpenCode extension deactivated");
+  logger?.info("CodeFree-O extension deactivated");
 }

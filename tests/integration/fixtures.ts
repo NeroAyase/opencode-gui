@@ -105,7 +105,7 @@ async function launchVSCode(options: {
   await waitForPort(debugPort, 60000);
 
   // The extension log path will be in the user data directory
-  const extensionLogPath = path.join(userDataDir, 'logs', 'window1', 'exthost', 'output_logging_opencode');
+  const extensionLogPath = path.join(userDataDir, 'logs', 'window1', 'exthost', 'output_logging_codefree-o');
 
   return {
     process: vscodeProcess,
@@ -120,7 +120,7 @@ async function connectToWebview(cdpUrl: string): Promise<{ browser: Browser; ses
   console.log('[fixture] Connecting to VSCode via CDP...');
   const browser = await chromium.connectOverCDP(cdpUrl);
 
-  // First, find the main VSCode window and execute command to open OpenCode view
+  // First, find the main VSCode window and execute command to open CodeFree-O view
   let mainPage: Page | null = null;
   const contexts = browser.contexts();
   for (const context of contexts) {
@@ -138,14 +138,14 @@ async function connectToWebview(cdpUrl: string): Promise<{ browser: Browser; ses
   }
 
   if (mainPage) {
-    // Execute command to open OpenCode view
-    console.log('[fixture] Opening OpenCode view...');
+    // Execute command to open CodeFree-O view
+    console.log('[fixture] Opening CodeFree-O view...');
     try {
       await mainPage.evaluate(() => {
         // @ts-ignore - VSCode API available in window
         if (window.vscode) {
           // @ts-ignore
-          window.vscode.commands.executeCommand('workbench.view.extension.opencode');
+          window.vscode.commands.executeCommand('workbench.view.extension.codefree-o');
         }
       });
       await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for view to open
@@ -154,7 +154,7 @@ async function connectToWebview(cdpUrl: string): Promise<{ browser: Browser; ses
     }
   }
 
-  // Find the OpenCode webview
+  // Find the CodeFree-O webview
   let webviewPage: Page | null = null;
   let attempts = 0;
   const maxAttempts = 20;
@@ -165,8 +165,8 @@ async function connectToWebview(cdpUrl: string): Promise<{ browser: Browser; ses
       const pages = context.pages();
       for (const page of pages) {
         const url = page.url();
-        // Look for the OpenCode webview
-        if (url.includes('vscode-webview') && url.includes('opencode')) {
+        // Look for the CodeFree-O webview
+        if (url.includes('vscode-webview') && url.includes('codefree-o')) {
           webviewPage = page;
           console.log(`[fixture] Found webview: ${url}`);
           break;
@@ -183,7 +183,7 @@ async function connectToWebview(cdpUrl: string): Promise<{ browser: Browser; ses
   }
 
   if (!webviewPage) {
-    throw new Error('Could not find OpenCode webview after waiting');
+    throw new Error('Could not find CodeFree-O webview after waiting');
   }
 
   // Create CDP session

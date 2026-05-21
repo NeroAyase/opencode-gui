@@ -6,9 +6,9 @@ import { TopBar } from "./components/TopBar";
 import { ContextIndicator } from "./components/ContextIndicator";
 import { FileChangesSummary } from "./components/FileChangesSummary";
 import { PermissionPrompt } from "./components/PermissionPrompt";
-import { useOpenCode, type PromptPartInput } from "./hooks/useOpenCode";
+import { useCodeFreeO, type PromptPartInput } from "./hooks/useOpenCode";
 import { useSync } from "./state/sync";
-import type { FilePartInput } from "@opencode-ai/sdk/v2/client";
+import type { FilePartInput } from "@srdcloud/codefree-o-sdk/v2/client";
 import type { Message, Agent, Session, Permission, FileChangesInfo, MessagePart } from "./types";
 import { parseHostMessage } from "./types";
 
@@ -89,7 +89,7 @@ function App() {
     revertToMessage,
     hostError,
     clearHostError,
-  } = useOpenCode();
+  } = useCodeFreeO();
 
   // Get the current session key for drafts/agents
   const sessionKey = () => sync.currentSessionId() || NEW_SESSION_KEY;

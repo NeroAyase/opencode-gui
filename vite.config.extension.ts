@@ -48,6 +48,6 @@ export default defineConfig({
   },
   ssr: {
     // Tell Vite this is a Node.js environment
-    noExternal: ['@opencode-ai/sdk'],
+    noExternal: ['@srdcloud/codefree-o-sdk'],
   },
 });

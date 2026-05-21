@@ -1,8 +1,10 @@
 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Outer box -->
-  <rect x="2" y="2" width="20" height="20" stroke="#B7B1B1" stroke-width="2" fill="none"/>
-  <!-- Inner box -->
-  <rect x="6" y="6" width="12" height="12" fill="#4B4646"/>
-  <!-- Center square cutout -->
-  <rect x="8" y="8" width="8" height="8" fill="#B7B1B1"/>
+  <!-- Rounded square background -->
+  <rect x="2" y="2" width="20" height="20" rx="3" fill="#1A73E8"/>
+  <!-- Code bracket left -->
+  <path d="M9 6L5 12L9 18" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Code bracket right -->
+  <path d="M15 6L19 12L15 18" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Center dot -->
+  <circle cx="12" cy="12" r="1.5" fill="white"/>
 </svg>
