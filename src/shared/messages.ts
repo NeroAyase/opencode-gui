@@ -122,6 +122,53 @@ export const FileChangesInfoSchema = z.object({
 });
 export type FileChangesInfo = z.infer<typeof FileChangesInfoSchema>;
 
+export const QuestionInfoSchema = z.object({
+  question: z.string(),
+  header: z.string().optional(),
+  options: z.array(
+    z.object({
+      label: z.string(),
+      description: z.string().optional(),
+    }),
+  ),
+  multiple: z.boolean().optional(),
+  custom: z.boolean().optional(),
+});
+export type QuestionInfo = z.infer<typeof QuestionInfoSchema>;
+
+export const QuestionRequestSchema = z.object({
+  id: z.string(),
+  sessionID: z.string(),
+  questions: z.array(QuestionInfoSchema),
+  tool: z
+    .object({
+      messageID: z.string(),
+      callID: z.string(),
+    })
+    .optional(),
+});
+export type QuestionRequest = z.infer<typeof QuestionRequestSchema>;
+
+export const CommandSchema = z.object({
+  name: z.string(),
+  description: z.string().optional(),
+});
+export type Command = z.infer<typeof CommandSchema>;
+
+export const ModelSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  providerID: z.string(),
+});
+export type Model = z.infer<typeof ModelSchema>;
+
+export const ProviderSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  models: z.record(z.string(), ModelSchema),
+});
+export type Provider = z.infer<typeof ProviderSchema>;
+
 // Host -> Webview messages
 export const HostMessageSchema = z.discriminatedUnion("type", [
   z
@@ -191,6 +238,29 @@ export const HostMessageSchema = z.discriminatedUnion("type", [
     type: z.literal("search-files-result"),
     files: z.array(z.string()),
   }),
+  z.object({
+    type: z.literal("agent-selected"),
+    agent: z.string(),
+  }),
+  z.object({
+    type: z.literal("model-selected"),
+    providerID: z.string(),
+    modelID: z.string(),
+  }),
+  z.object({
+    type: z.literal("command-list-result"),
+    commands: z.array(CommandSchema),
+  }),
+  z.object({
+    type: z.literal("provider-list-result"),
+    providers: z.array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        models: z.array(ModelSchema),
+      }),
+    ),
+  }),
 ]);
 export type HostMessage = z.infer<typeof HostMessageSchema>;
 
@@ -219,6 +289,74 @@ export const WebviewMessageSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("search-files"),
     query: z.string(),
+  }),
+  z.object({
+    type: z.literal("select-agent"),
+  }),
+  z.object({
+    type: z.literal("select-model"),
+  }),
+  z.object({
+    type: z.literal("open-diff"),
+    filePath: z.string(),
+    before: z.string().optional(),
+    after: z.string().optional(),
+    patch: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal("open-terminal"),
+    command: z.string().optional(),
+    cwd: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal("session-fork"),
+    sessionID: z.string(),
+    messageID: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal("session-revert"),
+    sessionID: z.string(),
+    messageID: z.string(),
+  }),
+  z.object({
+    type: z.literal("session-share"),
+    sessionID: z.string(),
+  }),
+  z.object({
+    type: z.literal("session-delete"),
+    sessionID: z.string(),
+  }),
+  z.object({
+    type: z.literal("session-rename"),
+    sessionID: z.string(),
+    title: z.string(),
+  }),
+  z.object({
+    type: z.literal("copy-text"),
+    text: z.string(),
+  }),
+  z.object({
+    type: z.literal("question-reply"),
+    requestID: z.string(),
+    answers: z.array(z.array(z.string())),
+  }),
+  z.object({
+    type: z.literal("question-reject"),
+    requestID: z.string(),
+  }),
+  z.object({
+    type: z.literal("command-list"),
+  }),
+  z.object({
+    type: z.literal("command-execute"),
+    command: z.string(),
+    arguments: z.array(z.string()).optional(),
+    sessionID: z.string(),
+    agent: z.string().optional(),
+    model: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal("provider-list"),
   }),
 ]);
 export type WebviewMessage = z.infer<typeof WebviewMessageSchema>;

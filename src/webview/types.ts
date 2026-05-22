@@ -10,6 +10,8 @@ export type {
   FileChangesInfo,
   HostMessage,
   WebviewMessage,
+  QuestionInfo,
+  QuestionRequest,
 } from "../shared/messages";
 
 export {

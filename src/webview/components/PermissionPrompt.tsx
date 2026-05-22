@@ -1,9 +1,13 @@
+import { createSignal, Show } from "solid-js";
 import type { Permission } from "../../shared/messages";
+import { DiffViewer } from "./parts/DiffViewer";
 
 interface PermissionPromptProps {
   permission: Permission;
   onResponse: (permissionId: string, response: "once" | "always" | "reject") => void;
   workspaceRoot?: string;
+  autoAcceptEnabled?: boolean;
+  onToggleAutoAccept?: () => void;
 }
 
 function normalizePath(input?: string, workspaceRoot?: string): string {
@@ -44,6 +48,8 @@ function extractDirectory(pattern?: string): string | undefined {
 }
 
 export function PermissionPrompt(props: PermissionPromptProps) {
+  const [diffExpanded, setDiffExpanded] = createSignal(false);
+
   const getPermissionMessage = () => {
     const type = props.permission.permission;
     const meta = props.permission.metadata || {};
@@ -62,9 +68,9 @@ export function PermissionPrompt(props: PermissionPromptProps) {
         return `Allow access to ${dir}?`;
       }
       case "edit":
-        return `Allow editing ${(meta.filepath as string) || "this file"}?`;
+        return `Allow editing this file?`;
       case "read":
-        return `Allow reading ${(meta.filepath as string) || "this file"}?`;
+        return `Allow reading this file?`;
       case "bash":
         return `Allow running: ${(meta.command as string) || "this command"}?`;
       case "task":
@@ -84,6 +90,25 @@ export function PermissionPrompt(props: PermissionPromptProps) {
     }
   };
 
+  const getFilePath = (): string | undefined => {
+    const type = props.permission.permission;
+    const meta = props.permission.metadata || {};
+    if (type === "edit" || type === "read") {
+      const filepath = meta.filepath as string | undefined;
+      return filepath ? normalizePath(filepath, props.workspaceRoot) : undefined;
+    }
+    return undefined;
+  };
+
+  const getDiff = (): string | undefined => {
+    const type = props.permission.permission;
+    const meta = props.permission.metadata || {};
+    if (type === "edit") {
+      return meta.diff as string | undefined;
+    }
+    return undefined;
+  };
+
   const handleResponse = (response: "once" | "always" | "reject") => {
     props.onResponse(props.permission.id, response);
   };
@@ -95,7 +120,50 @@ export function PermissionPrompt(props: PermissionPromptProps) {
         <div class="permission-prompt__message">
           {getPermissionMessage()}
         </div>
+        <Show when={props.onToggleAutoAccept !== undefined}>
+          <label class="permission-auto-accept" title="Auto-accept all permission requests">
+            <input
+              type="checkbox"
+              class="permission-auto-accept__checkbox"
+              checked={props.autoAcceptEnabled ?? false}
+              onChange={() => props.onToggleAutoAccept?.()}
+            />
+            <span class="permission-auto-accept__toggle" />
+            <span class="permission-auto-accept__label">Auto</span>
+          </label>
+        </Show>
       </div>
+      <Show when={getFilePath()}>
+        <div class="permission-prompt__filepath" title={getFilePath()}>
+          {getFilePath()}
+        </div>
+      </Show>
+      <Show when={getDiff()}>
+        <div class="permission-diff-preview">
+          <button
+            class="permission-diff-preview__header"
+            onClick={() => setDiffExpanded(!diffExpanded())}
+            aria-expanded={diffExpanded()}
+          >
+            <svg
+              class="permission-diff-preview__chevron"
+              width="12"
+              height="12"
+              viewBox="0 0 16 16"
+              fill="currentColor"
+              style={{ transform: diffExpanded() ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.15s ease" }}
+            >
+              <path d="M6 4l4 4-4 4" />
+            </svg>
+            <span>Diff preview</span>
+          </button>
+          <Show when={diffExpanded()}>
+            <div class="permission-diff-preview__content">
+              <DiffViewer diff={getDiff()!} />
+            </div>
+          </Show>
+        </div>
+      </Show>
       <div class="permission-prompt__buttons">
         <button
           class="permission-button permission-button--quiet"

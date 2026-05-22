@@ -17,7 +17,7 @@ import {
 } from "solid-js";
 import { createStore, produce } from "solid-js/store";
 import { useCodeFreeO, type Event, type SSEStatus } from "../hooks/useOpenCode";
-import type { Message, Permission } from "../types";
+import type { Message, Permission, QuestionRequest } from "../types";
 import { type SyncState, type SyncStatus, createEmptyState } from "./types";
 import { applyEvent, type EventHandlerContext } from "./eventHandlers";
 import { fetchBootstrapData, commitBootstrapData } from "./bootstrap";
@@ -82,6 +82,7 @@ function createSync() {
           for (const msg of prevMessages) { delete draft[msg.id]; }
         }));
         setStore("permission", produce((draft) => { delete draft[prevId]; }));
+        setStore("question", produce((draft) => { delete draft[prevId]; }));
       });
       // Clean up messageToSession mapping
       for (const msg of prevMessages) {
@@ -115,6 +116,12 @@ function createSync() {
       map.set(key, p);
     }
     return map;
+  });
+
+  const questions = createMemo(() => {
+    const sessionId = currentSessionId();
+    if (!sessionId) return [];
+    return store.question[sessionId] ?? [];
   });
 
   // Aggregate permissions across current session and its children
@@ -169,6 +176,20 @@ function createSync() {
     } else {
       setStore("sessionError", sessionId, error);
     }
+  }
+
+  async function replyToQuestion(requestID: string, answers: string[][]) {
+    const c = sdk.client();
+    if (!c) return;
+    const dir = sdk.workspaceRoot();
+    return c.question.reply({ requestID, answers, ...(dir ? { directory: dir } : {}) });
+  }
+
+  async function rejectQuestion(requestID: string) {
+    const c = sdk.client();
+    if (!c) return;
+    const dir = sdk.workspaceRoot();
+    return c.question.reject({ requestID, ...(dir ? { directory: dir } : {}) });
   }
 
   async function bootstrap(): Promise<void> {
@@ -334,6 +355,7 @@ function createSync() {
     agents,
     permissions,
     aggregatedPermissions,
+    questions,
     isThinking,
     sessionError,
     sessionStatus,
@@ -347,6 +369,8 @@ function createSync() {
 
     setThinking,
     setSessionError,
+    replyToQuestion,
+    rejectQuestion,
     bootstrap,
     reconnect,
     onSessionIdle,

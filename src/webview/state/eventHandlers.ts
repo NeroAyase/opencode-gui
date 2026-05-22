@@ -5,9 +5,10 @@ import type {
   Part,
   Session as SDKSession,
   PermissionRequest as SDKPermission,
+  QuestionRequest as SDKQuestion,
   AssistantMessage,
 } from "@srdcloud/codefree-o-sdk/v2/client";
-import type { Message, MessagePart, Session, Permission } from "../types";
+import type { Message, MessagePart, Session, Permission, QuestionRequest } from "../types";
 import type { SyncState } from "./types";
 import { DEFAULT_CONTEXT_LIMIT } from "./types";
 import { binarySearch, findById, extractTextFromParts } from "./utils";
@@ -56,6 +57,16 @@ function toPermission(sdkPerm: SDKPermission): Permission {
     metadata: sdkPerm.metadata ?? {},
     always: sdkPerm.always,
     tool: sdkPerm.tool,
+  };
+}
+
+/** Convert SDK QuestionRequest to our internal QuestionRequest type */
+function toQuestion(sdkQ: SDKQuestion): QuestionRequest {
+  return {
+    id: sdkQ.id,
+    sessionID: sdkQ.sessionID,
+    questions: sdkQ.questions,
+    tool: sdkQ.tool,
   };
 }
 
@@ -521,6 +532,70 @@ export function applyEvent(event: Event, ctx: EventHandlerContext): void {
       const result = binarySearch(permissions, requestID, (p) => p.id);
       if (result.found) {
         setStore("permission", sessionId, produce((draft) => {
+          draft.splice(result.index, 1);
+        }));
+      }
+      break;
+    }
+
+    case "question.asked": {
+      const question = toQuestion(event.properties);
+      const sessionId = question.sessionID;
+
+      logger.debug("Question event received", {
+        questionId: question.id,
+        sessionId,
+        questionCount: question.questions.length,
+        tool: question.tool,
+      });
+
+      if (!sessionId) break;
+
+      const questions = store.question[sessionId];
+      if (!questions) {
+        setStore("question", sessionId, [question]);
+        break;
+      }
+
+      const result = binarySearch(questions, question.id, (q) => q.id);
+      if (result.found) {
+        setStore("question", sessionId, result.index, reconcile(question));
+      } else {
+        setStore("question", sessionId, produce((draft) => {
+          draft.splice(result.index, 0, question);
+        }));
+      }
+      break;
+    }
+
+    case "question.replied": {
+      const { sessionID, requestID } = event.properties;
+      const sessionId = sessionID ?? currentSessionId();
+      if (!sessionId) break;
+
+      const questions = store.question[sessionId];
+      if (!questions) break;
+
+      const result = binarySearch(questions, requestID, (q) => q.id);
+      if (result.found) {
+        setStore("question", sessionId, produce((draft) => {
+          draft.splice(result.index, 1);
+        }));
+      }
+      break;
+    }
+
+    case "question.rejected": {
+      const { sessionID, requestID } = event.properties;
+      const sessionId = sessionID ?? currentSessionId();
+      if (!sessionId) break;
+
+      const questions = store.question[sessionId];
+      if (!questions) break;
+
+      const result = binarySearch(questions, requestID, (q) => q.id);
+      if (result.found) {
+        setStore("question", sessionId, produce((draft) => {
           draft.splice(result.index, 1);
         }));
       }

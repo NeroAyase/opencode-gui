@@ -194,6 +194,34 @@ function createOpenCode() {
     });
   }
 
+  // Reply to a question request
+  async function replyToQuestion(
+    requestID: string,
+    answers: string[][]
+  ) {
+    const c = client();
+    if (!c) throw new Error("Not connected");
+
+    const dir = workspaceRoot();
+    return c.question.reply({
+      requestID,
+      answers,
+      ...(dir ? { directory: dir } : {}),
+    });
+  }
+
+  // Reject a question request
+  async function rejectQuestion(requestID: string) {
+    const c = client();
+    if (!c) throw new Error("Not connected");
+
+    const dir = workspaceRoot();
+    return c.question.reject({
+      requestID,
+      ...(dir ? { directory: dir } : {}),
+    });
+  }
+
   // Revert to a previous message
   async function revertToMessage(sessionId: string, messageId: string) {
     const c = client();
@@ -234,6 +262,8 @@ function createOpenCode() {
     sendPrompt,
     subscribeToEvents,
     respondToPermission,
+    replyToQuestion,
+    rejectQuestion,
     revertToMessage,
   };
 }

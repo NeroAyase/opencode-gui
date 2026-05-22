@@ -7,6 +7,7 @@ import type {
   Part as SDKPart,
   AssistantMessage,
   PermissionRequest as SDKPermission,
+  QuestionRequest as SDKQuestion,
 } from "@srdcloud/codefree-o-sdk/v2/client";
 import type {
   Message,
@@ -16,6 +17,7 @@ import type {
   Permission,
   ContextInfo,
   FileChangesInfo,
+  QuestionRequest,
 } from "../types";
 import type { SyncState, SessionStatus } from "./types";
 import { DEFAULT_CONTEXT_LIMIT } from "./types";
@@ -40,6 +42,9 @@ export interface BootstrapContext {
     permission: {
       list: (opts?: { directory?: string }) => Promise<{ data?: any[] }>;
     };
+    question: {
+      list: (opts?: { directory?: string }) => Promise<{ data?: any[] }>;
+    };
   };
   sessionId: string | null;
   workspaceRoot: string | undefined;
@@ -51,6 +56,7 @@ export interface BootstrapResult {
   messageList: Message[];
   partMap: { [messageID: string]: MessagePart[] };
   permissionMap: { [sessionID: string]: Permission[] };
+  questionMap: { [sessionID: string]: QuestionRequest[] };
   sessionStatusMap: { [sessionID: string]: SessionStatus };
   contextInfo: ContextInfo | null;
   fileChanges: FileChangesInfo | null;
@@ -106,6 +112,16 @@ function toPermission(sdkPerm: SDKPermission): Permission {
   };
 }
 
+/** Convert SDK QuestionRequest to internal QuestionRequest type */
+function toQuestion(sdkQ: SDKQuestion): QuestionRequest {
+  return {
+    id: sdkQ.id,
+    sessionID: sdkQ.sessionID,
+    questions: sdkQ.questions,
+    tool: sdkQ.tool,
+  };
+}
+
 // System agents that should be hidden from the UI
 const HIDDEN_AGENTS = new Set(["compaction", "title", "summary"]);
 
@@ -139,6 +155,7 @@ export async function fetchBootstrapData(ctx: BootstrapContext): Promise<Bootstr
   let fileChanges: FileChangesInfo | null = null;
   const partMap: { [messageID: string]: MessagePart[] } = {};
   const permissionMap: { [sessionID: string]: Permission[] } = {};
+  const questionMap: { [sessionID: string]: QuestionRequest[] } = {};
   const sessionStatusMap: { [sessionID: string]: SessionStatus } = sessionStatusRes?.data ?? {};
 
   // Fetch pending permissions
@@ -158,6 +175,25 @@ export async function fetchBootstrapData(ctx: BootstrapContext): Promise<Bootstr
     }
   } catch (err) {
     logger.error("Failed to load permissions during bootstrap:", { error: err });
+  }
+
+  // Fetch pending questions
+  try {
+    const questionsRes = await client.question.list(
+      workspaceRoot ? { directory: workspaceRoot } : undefined
+    );
+    const questions = questionsRes?.data ?? [];
+
+    // Group questions by sessionID
+    for (const sdkQ of questions) {
+      const question = toQuestion(sdkQ as SDKQuestion);
+      if (!questionMap[question.sessionID]) {
+        questionMap[question.sessionID] = [];
+      }
+      questionMap[question.sessionID].push(question);
+    }
+  } catch (err) {
+    logger.error("Failed to load questions during bootstrap:", { error: err });
   }
 
   if (sessionId) {
@@ -259,7 +295,7 @@ export async function fetchBootstrapData(ctx: BootstrapContext): Promise<Bootstr
     messageCount: messageList.length,
     sessionId 
   });
-  return { agents, sessions, messageList, partMap, permissionMap, sessionStatusMap, contextInfo, fileChanges };
+  return { agents, sessions, messageList, partMap, permissionMap, questionMap, sessionStatusMap, contextInfo, fileChanges };
 }
 
 export function commitBootstrapData(
@@ -295,6 +331,7 @@ export function commitBootstrapData(
       setStore("part", messageId, parts);
     }
     setStore("permission", reconcile(data.permissionMap));
+    setStore("question", reconcile(data.questionMap));
     setStore("sessionStatus", reconcile(data.sessionStatusMap));
     setStore("contextInfo", data.contextInfo);
     setStore("fileChanges", data.fileChanges);

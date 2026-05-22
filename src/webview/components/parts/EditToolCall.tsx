@@ -10,6 +10,7 @@ import {
   ErrorFooter,
 } from "./ToolCallHelpers";
 import { DiffViewer, getDiffStats } from "./DiffViewer";
+import { langFromFilePath } from "../../utils/shiki";
 
 interface EditToolCallProps {
   part: MessagePart;
@@ -93,7 +94,10 @@ export function EditToolCall(props: EditToolCallProps) {
 
   const Output = () => (
     <Show when={state().metadata?.diff}>
-      <DiffViewer diff={state().metadata!.diff as string} />
+      <DiffViewer
+        diff={state().metadata!.diff as string}
+        language={langFromFilePath(relativePath() || "")}
+      />
     </Show>
   );
 

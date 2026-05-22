@@ -6,6 +6,7 @@ import type {
   Permission,
   ContextInfo,
   FileChangesInfo,
+  QuestionRequest,
 } from "../types";
 
 /** Default context window limit (tokens) used when not provided by the server */
@@ -34,6 +35,8 @@ export interface SyncState {
   part: { [messageID: string]: MessagePart[] };
   /** Permissions keyed by sessionID */
   permission: { [sessionID: string]: Permission[] };
+  /** Questions keyed by sessionID */
+  question: { [sessionID: string]: QuestionRequest[] };
   /** Session status keyed by sessionID */
   sessionStatus: { [sessionID: string]: SessionStatus };
   /** UI state */
@@ -51,6 +54,7 @@ export function createEmptyState(): SyncState {
     message: {},
     part: {},
     permission: {},
+    question: {},
     sessionStatus: {},
     contextInfo: null,
     fileChanges: null,

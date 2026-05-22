@@ -1010,6 +1010,124 @@ body {
   gap: var(--spacing-xs);
 }
 
+/* Permission File Path */
+.permission-prompt__filepath {
+  font-family: var(--editor-font-family);
+  font-size: var(--font-size-small);
+  color: var(--description-foreground);
+  padding: var(--spacing-xs) 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  border-top: 1px solid var(--border-color-muted);
+}
+
+/* Auto-Accept Toggle */
+.permission-auto-accept {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.permission-auto-accept__checkbox {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.permission-auto-accept__toggle {
+  position: relative;
+  display: inline-block;
+  width: 28px;
+  height: 14px;
+  background-color: var(--vscode-inputBackground, var(--input-background));
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.permission-auto-accept__toggle::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 10px;
+  height: 10px;
+  background-color: var(--description-foreground);
+  border-radius: 50%;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.permission-auto-accept__checkbox:checked + .permission-auto-accept__toggle {
+  background-color: var(--vscode-button-background, #0e639c);
+  border-color: var(--vscode-button-background, #0e639c);
+}
+
+.permission-auto-accept__checkbox:checked + .permission-auto-accept__toggle::after {
+  transform: translateX(14px);
+  background-color: var(--vscode-button-foreground, #ffffff);
+}
+
+.permission-auto-accept__checkbox:focus-visible + .permission-auto-accept__toggle {
+  outline: 2px solid var(--focus-border);
+  outline-offset: 1px;
+}
+
+.permission-auto-accept__label {
+  font-size: var(--font-size-small);
+  color: var(--description-foreground);
+  line-height: 1;
+}
+
+/* Diff Preview in Permission Prompt */
+.permission-diff-preview {
+  border: 1px solid var(--border-color-muted);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.permission-diff-preview__header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  width: 100%;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: none;
+  background-color: var(--input-background-muted);
+  color: var(--description-foreground);
+  font-family: var(--font-family);
+  font-size: var(--font-size-small);
+  cursor: pointer;
+  user-select: none;
+  text-align: left;
+}
+
+.permission-diff-preview__header:hover {
+  background-color: var(--hover-background);
+  color: var(--foreground);
+}
+
+.permission-diff-preview__header:focus-visible {
+  outline: 2px solid var(--focus-border);
+  outline-offset: -2px;
+}
+
+.permission-diff-preview__chevron {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.permission-diff-preview__content {
+  border-top: 1px solid var(--border-color-muted);
+  max-height: 200px;
+  overflow: auto;
+}
+
 /* Reasoning Block */
 .reasoning-block {
   display: inline;
@@ -1467,6 +1585,101 @@ body.vscode-high-contrast {
   font-family: var(--editor-font-family);
   font-size: 0.9em;
   line-height: 1.4;
+}
+
+/* Shiki syntax highlighting */
+.shiki {
+  background: transparent !important;
+  margin: 0;
+  padding: 0;
+}
+
+/* Code block container — wraps Shiki output in markdown */
+.code-block {
+  position: relative;
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 0.5em 0;
+  background-color: var(--text-code-block-background);
+  border: 1px solid var(--panel-border);
+}
+
+.code-block pre {
+  margin: 0;
+  padding: 0.75em;
+  background: transparent !important;
+  border: none;
+  overflow-x: auto;
+  font-family: var(--editor-font-family);
+  font-size: 0.9em;
+  line-height: 1.4;
+}
+
+.code-block code {
+  background: transparent !important;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+}
+
+.code-block__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+  font-size: 11px;
+  color: var(--description-foreground);
+  background: var(--text-blockquote-background);
+}
+
+.code-block__copy {
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.code-block__copy:hover {
+  opacity: 1;
+}
+
+/* Highlighted diff line content */
+.diff-line-content--highlighted {
+  font-family: var(--editor-font-family);
+}
+
+/* Highlighted bash command */
+.tool-text--highlighted .shiki {
+  background: transparent !important;
+  padding: 0;
+}
+
+.tool-text--highlighted .shiki code {
+  background: transparent !important;
+  border: none;
+  padding: 0;
+}
+
+/* Highlighted bash output */
+.tool-output--highlighted {
+  font-family: var(--editor-font-family);
+}
+
+.tool-output--highlighted .shiki {
+  background: transparent !important;
+  padding: 0;
+}
+
+.tool-output--highlighted .shiki pre {
+  margin: 0;
+  padding: 0;
+  background: transparent !important;
+  border: none;
+}
+
+.tool-output--highlighted .shiki code {
+  background: transparent !important;
+  border: none;
+  padding: 0;
 }
 
 .message-text pre code {

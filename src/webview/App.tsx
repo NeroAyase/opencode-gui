@@ -7,6 +7,7 @@ import { ContextIndicator } from "./components/ContextIndicator";
 import { FileChangesSummary } from "./components/FileChangesSummary";
 import { PermissionPrompt } from "./components/PermissionPrompt";
 import { useCodeFreeO, type PromptPartInput } from "./hooks/useOpenCode";
+import { useAutoAccept } from "./hooks/useAutoAccept";
 import { useSync } from "./state/sync";
 import type { FilePartInput } from "@srdcloud/codefree-o-sdk/v2/client";
 import type { Message, Agent, Session, Permission, FileChangesInfo, MessagePart } from "./types";
@@ -52,6 +53,9 @@ const NEW_SESSION_KEY = "__new__";
 function App() {
   // Use the sync context for server-owned state
   const sync = useSync();
+  
+  // Auto-accept toggle for permissions
+  const autoAccept = useAutoAccept();
   
   // Local UI-only state
   const [defaultAgent, setDefaultAgent] = createSignal<string | null>(null);
@@ -902,6 +906,20 @@ function App() {
     // Permission removal is handled by store via SSE events
   };
 
+  // Auto-accept: when enabled, automatically respond "once" to new permissions
+  createEffect(() => {
+    if (!autoAccept.isEnabled()) return;
+    const perms = pendingPermissions();
+    for (const [, perm] of perms.entries()) {
+      if (perm && !perm.always?.length) {
+        const sessionId = perm.sessionID || sync.currentSessionId();
+        if (sessionId && sync.isReady()) {
+          respondToPermission(sessionId, perm.id, "once");
+        }
+      }
+    }
+  });
+
   // Refresh sessions - just re-bootstrap
   const refreshSessions = async () => {
     await sync.bootstrap();
@@ -957,6 +975,8 @@ function App() {
                 permission={permission}
                 onResponse={handlePermissionResponse}
                 workspaceRoot={sync.workspaceRoot()}
+                autoAcceptEnabled={autoAccept.isEnabled()}
+                onToggleAutoAccept={autoAccept.toggle}
               />
             )}
           </For>
