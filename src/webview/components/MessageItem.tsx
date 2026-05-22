@@ -147,6 +147,42 @@ export function MessageItem(props: MessageItemProps) {
                 {(part) => <MessagePartRenderer part={part} workspaceRoot={props.workspaceRoot} pendingPermissions={props.pendingPermissions} onPermissionResponse={props.onPermissionResponse} isStreaming={props.isStreaming} />}
               </For>
             </Show>
+            <Show when={!props.isStreaming}>
+              <div class="message-actions">
+                <button
+                  type="button"
+                  class="message-action-button"
+                  title="Fork from this message"
+                  onClick={() => {
+                    const sessionId = sync.currentSessionId();
+                    if (!sessionId) return;
+                    vscode.postMessage({
+                      type: "session-fork",
+                      sessionID: sessionId,
+                      messageID: props.message.id,
+                    });
+                  }}
+                >
+                  <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M5 5.374v.876l.224.224A2.5 2.5 0 0 1 5 7.5 2.5 2.5 0 0 1 2.5 5 2.5 2.5 0 0 1 5 2.5a2.5 2.5 0 0 1 2.376 1.724L7.5 4.374h.876A2.5 2.5 0 0 1 10.5 2.5 2.5 2.5 0 0 1 13 5a2.5 2.5 0 0 1-2.5 2.5 2.5 2.5 0 0 1-1.724-.624L8.626 7.1v1.8l.15.224A2.5 2.5 0 0 1 10.5 8.5 2.5 2.5 0 0 1 13 11a2.5 2.5 0 0 1-2.5 2.5A2.5 2.5 0 0 1 8 11a2.5 2.5 0 0 1 .624-1.724L8.5 9.1V7l-.124-.224A2.5 2.5 0 0 1 7.5 7h-.876l-.224.224A2.5 2.5 0 0 1 5 10.5 2.5 2.5 0 0 1 2.5 8 2.5 2.5 0 0 1 5 5.374z"/></svg>
+                </button>
+                <button
+                  type="button"
+                  class="message-action-button"
+                  title="Revert to this message"
+                  onClick={() => {
+                    const sessionId = sync.currentSessionId();
+                    if (!sessionId) return;
+                    vscode.postMessage({
+                      type: "session-revert",
+                      sessionID: sessionId,
+                      messageID: props.message.id,
+                    });
+                  }}
+                >
+                  <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor"><path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.75.75 0 1 1 1.06 1.06L9.06 8l3.22 3.22a.75.75 0 1 1-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 0 1-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06z"/></svg>
+                </button>
+              </div>
+            </Show>
           </Show>
         </div>
       </div>

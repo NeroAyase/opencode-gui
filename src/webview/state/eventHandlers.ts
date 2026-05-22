@@ -403,15 +403,14 @@ export function applyEvent(event: Event, ctx: EventHandlerContext): void {
 
         if (session.summary) {
           if (session.summary.diffs && session.summary.diffs.length > 0) {
-            // Use detailed diffs if available
             const diffs = session.summary.diffs;
             setStore("fileChanges", {
               fileCount: diffs.length,
               additions: diffs.reduce((sum, d) => sum + (d.additions || 0), 0),
               deletions: diffs.reduce((sum, d) => sum + (d.deletions || 0), 0),
+              diffs,
             });
           } else if (session.summary.files > 0) {
-            // Fallback to summary-level aggregates
             setStore("fileChanges", {
               fileCount: session.summary.files,
               additions: session.summary.additions,
@@ -477,15 +476,21 @@ export function applyEvent(event: Event, ctx: EventHandlerContext): void {
     }
 
     case "session.diff": {
-      const { sessionID, diff } = event.properties as { sessionID?: string; diff?: Array<{ file: string; additions: number; deletions: number }> };
+      const { sessionID, diff } = event.properties as { sessionID?: string; diff?: Array<{ file: string; additions: number; deletions: number; patch?: string; status?: string }> };
       const sessionId = sessionID ?? currentSessionId();
       if (!sessionId || !diff) break;
 
-      // Aggregate file changes from diff array
       setStore("fileChanges", {
         fileCount: diff.length,
         additions: diff.reduce((sum, d) => sum + (d.additions || 0), 0),
         deletions: diff.reduce((sum, d) => sum + (d.deletions || 0), 0),
+        diffs: diff.map((d) => ({
+          file: d.file,
+          additions: d.additions,
+          deletions: d.deletions,
+          patch: d.patch,
+          status: d.status as "added" | "deleted" | "modified" | undefined,
+        })),
       });
       break;
     }

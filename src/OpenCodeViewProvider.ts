@@ -1,6 +1,8 @@
 import * as vscode from "vscode";
+import * as path from "path";
 import { execFile } from "child_process";
 import { OpenCodeService } from "./OpenCodeService";
+import { DiffContentProvider } from "./DiffContentProvider";
 import { getLogger } from "./extension";
 import type {
   HostMessage,
@@ -38,6 +40,7 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider, vscode.
     private readonly _extensionUri: vscode.Uri,
     private readonly _openCodeService: OpenCodeService,
     private readonly _globalState: vscode.Memento,
+    private readonly _diffProvider: DiffContentProvider,
   ) {}
 
   public resolveWebviewView(
@@ -165,6 +168,21 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider, vscode.
         break;
       case "command-execute":
         await this._handleCommandExecute(message);
+        break;
+      case "session-fork":
+        await this._handleSessionFork(message);
+        break;
+      case "session-revert":
+        await this._handleSessionRevert(message);
+        break;
+      case "session-share":
+        await this._handleSessionShare(message);
+        break;
+      case "open-diff":
+        this._handleOpenDiff(message.filePath, message.before, message.after, message.patch);
+        break;
+      case "open-terminal":
+        this._handleOpenTerminal(message.command, message.cwd);
         break;
     }
   }
@@ -547,6 +565,173 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider, vscode.
         command: message.command,
         error,
       });
+    }
+  }
+
+  private async _handleSessionFork(
+    message: { sessionID: string; messageID?: string },
+  ) {
+    const client = this._openCodeService.getClient();
+    if (!client) {
+      vscode.window.showWarningMessage("CodeFree-O is not ready yet.");
+      return;
+    }
+
+    try {
+      const dir = this._openCodeService.getWorkspaceRoot();
+      const result = await client.session.fork({
+        sessionID: message.sessionID,
+        ...(message.messageID ? { messageID: message.messageID } : {}),
+        ...(dir ? { directory: dir } : {}),
+      });
+      if (result.error || !result.data) {
+        vscode.window.showErrorMessage("Failed to fork session.");
+        return;
+      }
+      const forkedSessionId = result.data.id;
+      this._sendMessage({ type: "session-forked", sessionID: forkedSessionId });
+      vscode.window.showInformationMessage(`Forked session: ${forkedSessionId}`);
+    } catch (error) {
+      const logger = getLogger();
+      logger.error("[ViewProvider] Failed to fork session", { error });
+      vscode.window.showErrorMessage("Failed to fork session.");
+    }
+  }
+
+  private async _handleSessionRevert(
+    message: { sessionID: string; messageID: string },
+  ) {
+    const client = this._openCodeService.getClient();
+    if (!client) {
+      vscode.window.showWarningMessage("CodeFree-O is not ready yet.");
+      return;
+    }
+
+    try {
+      const dir = this._openCodeService.getWorkspaceRoot();
+      const result = await client.session.revert({
+        sessionID: message.sessionID,
+        messageID: message.messageID,
+        ...(dir ? { directory: dir } : {}),
+      });
+      if (result.error || !result.data) {
+        vscode.window.showErrorMessage("Failed to revert session.");
+        return;
+      }
+      this._sendMessage({ type: "session-reverted", sessionID: message.sessionID });
+      vscode.window.showInformationMessage("Session reverted.");
+    } catch (error) {
+      const logger = getLogger();
+      logger.error("[ViewProvider] Failed to revert session", { error });
+      vscode.window.showErrorMessage("Failed to revert session.");
+    }
+  }
+
+  private async _handleSessionShare(
+    message: { sessionID: string },
+  ) {
+    const client = this._openCodeService.getClient();
+    if (!client) {
+      vscode.window.showWarningMessage("CodeFree-O is not ready yet.");
+      return;
+    }
+
+    try {
+      const dir = this._openCodeService.getWorkspaceRoot();
+      const result = await client.session.share({
+        sessionID: message.sessionID,
+        ...(dir ? { directory: dir } : {}),
+      });
+      if (result.error || !result.data) {
+        vscode.window.showErrorMessage("Failed to share session.");
+        return;
+      }
+      const shareUrl = result.data.share?.url;
+      if (shareUrl) {
+        await vscode.env.clipboard.writeText(shareUrl);
+        vscode.window.showInformationMessage("Share link copied to clipboard!");
+      } else {
+        vscode.window.showWarningMessage("Session shared but no URL returned.");
+      }
+    } catch (error) {
+      const logger = getLogger();
+      logger.error("[ViewProvider] Failed to share session", { error });
+      vscode.window.showErrorMessage("Failed to share session.");
+    }
+  }
+
+  private _handleOpenTerminal(command?: string, cwd?: string): void {
+    const workspaceRoot = this._openCodeService.getWorkspaceRoot();
+    const terminalCwd = cwd || workspaceRoot;
+
+    const terminalOptions: vscode.TerminalOptions = {
+      name: "CodeFree-O",
+    };
+
+    if (terminalCwd) {
+      terminalOptions.cwd = vscode.Uri.file(terminalCwd);
+    }
+
+    const existing = vscode.window.terminals.find(t => t.name === "CodeFree-O");
+    const terminal = existing ?? vscode.window.createTerminal(terminalOptions);
+
+    if (command) {
+      terminal.sendText(command);
+    }
+
+    terminal.show();
+  }
+
+  private _handleOpenDiff(filePath: string, before?: string, after?: string, patch?: string): void {
+    const workspaceRoot = this._openCodeService.getWorkspaceRoot();
+    if (!workspaceRoot) return;
+
+    const absPath = path.isAbsolute(filePath) ? filePath : path.join(workspaceRoot, filePath);
+    let beforeContent = before ?? "";
+    let afterContent = after ?? "";
+
+    if (!before && !after) {
+      const doc = vscode.workspace.openTextDocument(vscode.Uri.file(absPath)).then((doc) => {
+        afterContent = doc.getText();
+        this._getGitHeadContent(filePath, workspaceRoot).then((gitContent) => {
+          beforeContent = gitContent;
+          this._showDiff(filePath, beforeContent, afterContent);
+        });
+      });
+      return;
+    }
+
+    this._showDiff(filePath, beforeContent, afterContent);
+  }
+
+  private _showDiff(filePath: string, beforeContent: string, afterContent: string): void {
+    const key = `${Date.now()}-${path.basename(filePath)}`;
+    const beforeUri = this._diffProvider.storeContent("before", key, beforeContent, filePath);
+    const afterUri = this._diffProvider.storeContent("after", key, afterContent, filePath);
+
+    const beforeTitle = `${path.basename(filePath)} (Before)`;
+    const afterTitle = `${path.basename(filePath)} (After)`;
+
+    vscode.commands.executeCommand(
+      "vscode.diff",
+      beforeUri,
+      afterUri,
+      `${beforeTitle} ↔ ${afterTitle}`,
+      { preview: true }
+    );
+  }
+
+  private async _getGitHeadContent(filePath: string, workspaceRoot: string): Promise<string> {
+    try {
+      const relPath = path.isAbsolute(filePath) ? path.relative(workspaceRoot, filePath) : filePath;
+      return await new Promise<string>((resolve, reject) => {
+        execFile("git", ["show", `HEAD:${relPath.replace(/\\/g, "/")}`], { cwd: workspaceRoot }, (err, stdout) => {
+          if (err) reject(err);
+          else resolve(stdout);
+        });
+      });
+    } catch {
+      return "";
     }
   }
 

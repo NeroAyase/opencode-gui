@@ -574,6 +574,76 @@ body {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  position: relative;
+}
+
+/* Message Actions (fork/revert) */
+.message-actions {
+  display: flex;
+  gap: var(--spacing-xs);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  padding-top: var(--spacing-xs);
+}
+
+.message:hover .message-actions {
+  opacity: 1;
+}
+
+.message-action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 3px;
+  background-color: transparent;
+  color: var(--description-foreground);
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.message-action-button:hover {
+  background-color: var(--hover-background);
+  color: var(--foreground);
+  opacity: 1;
+}
+
+.message-action-button:focus-visible {
+  outline: 2px solid var(--focus-border);
+  outline-offset: 1px;
+}
+
+/* Share Button */
+.share-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: var(--spacing-md);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background-color: transparent;
+  color: var(--input-foreground);
+  cursor: pointer;
+  user-select: none;
+  flex: 0;
+  line-height: 1;
+  opacity: 0.7;
+}
+
+.share-button:hover {
+  background-color: var(--hover-background);
+  opacity: 1;
+}
+
+.share-button:focus-visible {
+  outline: 1px solid var(--focus-border);
+  outline-offset: 0;
+  border-color: transparent;
 }
 
 .message-content a {
@@ -2093,4 +2163,105 @@ body.vscode-high-contrast {
 .question-dock__submit-btn:focus-visible {
   outline: 2px solid var(--vscode-focusBorder, var(--focus-border));
   outline-offset: 1px;
+}
+
+/* File Changes List */
+.file-changes-list {
+  padding: 8px 12px;
+  border-top: 1px solid var(--vscode-panel-border, #474747);
+  background: var(--vscode-sideBar-background);
+}
+
+.file-changes-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.file-changes-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--vscode-descriptionForeground);
+  letter-spacing: 0.5px;
+}
+
+.file-changes-stats {
+  font-size: 11px;
+  font-family: monospace;
+}
+
+.file-changes-stats .additions {
+  color: var(--vscode-gitDecoration-addedResourceForeground, #73c991);
+}
+
+.file-changes-stats .deletions {
+  color: var(--vscode-gitDecoration-deletedResourceForeground, #c74e39);
+}
+
+.file-changes-count {
+  font-size: 11px;
+  color: var(--vscode-descriptionForeground);
+}
+
+.file-changes-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3px 6px;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background-color 0.1s;
+}
+
+.file-changes-item:hover {
+  background: var(--vscode-list-hoverBackground, rgba(255, 255, 255, 0.05));
+}
+
+.file-changes-name {
+  color: var(--vscode-foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  margin-right: 8px;
+}
+
+.file-changes-diff-stats {
+  font-family: monospace;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.file-changes-diff-stats .additions {
+  color: var(--vscode-gitDecoration-addedResourceForeground, #73c991);
+}
+
+.file-changes-diff-stats .deletions {
+  color: var(--vscode-gitDecoration-deletedResourceForeground, #c74e39);
+  margin-left: 4px;
+}
+
+/* Tool Action Buttons */
+.tool-action-button {
+  background: none;
+  border: none;
+  color: var(--description-foreground);
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-size: 12px;
+  opacity: 0;
+  transition: opacity 0.15s, background-color 0.1s;
+}
+
+.tool-call:hover .tool-action-button {
+  opacity: 1;
+}
+
+.tool-action-button:hover {
+  background: var(--vscode-toolbar-hoverBackground, rgba(255, 255, 255, 0.1));
+  color: var(--foreground);
 }

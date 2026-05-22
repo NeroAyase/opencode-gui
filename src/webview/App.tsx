@@ -471,6 +471,18 @@ function App() {
         setSelectedModel({ providerID: parsed.providerID, modelID: parsed.modelID });
         return;
       }
+
+      if (parsed.type === "session-forked") {
+        sync.setCurrentSessionId(parsed.sessionID);
+        sync.setSessionError(parsed.sessionID, null);
+        void sync.bootstrap();
+        return;
+      }
+
+      if (parsed.type === "session-reverted") {
+        void sync.bootstrap();
+        return;
+      }
     };
 
     window.addEventListener("message", handleHostMessage);

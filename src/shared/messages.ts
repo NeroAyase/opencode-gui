@@ -58,10 +58,10 @@ export type Agent = z.infer<typeof AgentSchema>;
 
 export const FileDiffSchema = z.object({
   file: z.string(),
-  before: z.string(),
-  after: z.string(),
+  patch: z.string().optional(),
   additions: z.number(),
   deletions: z.number(),
+  status: z.enum(["added", "deleted", "modified"]).optional(),
 });
 export type FileDiff = z.infer<typeof FileDiffSchema>;
 
@@ -119,6 +119,7 @@ export const FileChangesInfoSchema = z.object({
   fileCount: z.number(),
   additions: z.number(),
   deletions: z.number(),
+  diffs: z.array(FileDiffSchema).optional(),
 });
 export type FileChangesInfo = z.infer<typeof FileChangesInfoSchema>;
 
@@ -260,6 +261,14 @@ export const HostMessageSchema = z.discriminatedUnion("type", [
         models: z.array(ModelSchema),
       }),
     ),
+  }),
+  z.object({
+    type: z.literal("session-forked"),
+    sessionID: z.string(),
+  }),
+  z.object({
+    type: z.literal("session-reverted"),
+    sessionID: z.string(),
   }),
 ]);
 export type HostMessage = z.infer<typeof HostMessageSchema>;

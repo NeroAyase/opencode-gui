@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { OpenCodeService } from "./OpenCodeService";
 import { OpenCodeViewProvider } from "./OpenCodeViewProvider";
+import { DiffContentProvider } from "./DiffContentProvider";
 import type { HostMessage } from "./shared/messages";
 
 let logger: vscode.LogOutputChannel;
@@ -33,10 +34,16 @@ export async function activate(context: vscode.ExtensionContext) {
     logger.error("Failed to initialize CodeFree-O service", error);
   }
 
+  const diffProvider = new DiffContentProvider();
+  context.subscriptions.push(
+    vscode.workspace.registerTextDocumentContentProvider(DiffContentProvider.SCHEME, diffProvider)
+  );
+
   const provider = new OpenCodeViewProvider(
     context.extensionUri,
     openCodeService,
-    context.globalState
+    context.globalState,
+    diffProvider
   );
 
   context.subscriptions.push(

@@ -4,6 +4,7 @@ import { ToolCallTemplate } from "./ToolCallTemplate";
 import { TerminalIcon } from "./ToolCallIcons";
 import { getToolInputs, usePermission, ErrorFooter } from "./ToolCallHelpers";
 import { highlightCode, detectLanguage } from "../../utils/shiki";
+import { vscode } from "../../utils/vscode";
 
 interface BashToolCallProps {
   part: MessagePart;
@@ -104,6 +105,20 @@ export function BashToolCall(props: BashToolCallProps) {
             innerHTML={highlightedCmd()!}
           />
         </Show>
+        <button
+          class="tool-action-button terminal-button"
+          onClick={(e) => {
+            e.stopPropagation();
+            vscode.postMessage({
+              type: "open-terminal",
+              command: command(),
+              ...(props.workspaceRoot ? { cwd: props.workspaceRoot } : {}),
+            });
+          }}
+          title="Open in terminal"
+        >
+          ⌨
+        </button>
       </span>
     );
   };
