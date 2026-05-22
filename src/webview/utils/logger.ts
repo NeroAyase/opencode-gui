@@ -3,13 +3,14 @@
  * Falls back to console logging in standalone mode (E2E tests, web app).
  */
 
-// Check if VS Code API is available
-const hasVscodeApi = typeof (window as any).acquireVsCodeApi === "function" 
-  || typeof (window as any).vscode !== "undefined";
+// Check if VS Code API is available (safe for Node.js test environments)
+const hasVscodeApi = typeof window !== "undefined"
+  && (typeof (window as any).acquireVsCodeApi === "function"
+    || typeof (window as any).vscode !== "undefined");
 
 // Get VS Code API if available
 function getVscode(): { postMessage(message: unknown): void } | null {
-  if (typeof (window as any).vscode !== "undefined") {
+  if (typeof window !== "undefined" && typeof (window as any).vscode !== "undefined") {
     return (window as any).vscode;
   }
   return null;
