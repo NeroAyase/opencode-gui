@@ -26,7 +26,7 @@ interface DevServerConfig {
   wsOrigin: string;
 }
 
-export class OpenCodeViewProvider implements vscode.WebviewViewProvider {
+export class OpenCodeViewProvider implements vscode.WebviewViewProvider, vscode.Disposable {
   public static readonly viewType = "codefree-o.chatView";
   private _view?: vscode.WebviewView;
   private _sseClients = new Map<string, SseClient>();
@@ -554,6 +554,23 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider {
     if (this._view) {
       this._view.webview.postMessage(message);
     }
+  }
+
+  public dispose(): void {
+    // Close all SSE clients
+    for (const [_id, client] of this._sseClients) {
+      client.close();
+    }
+    this._sseClients.clear();
+
+    // Abort all in-flight proxy fetches
+    for (const [_id, controller] of this._proxyFetchControllers) {
+      controller.abort();
+    }
+    this._proxyFetchControllers.clear();
+
+    // Clear pending messages
+    this._pendingMessages = [];
   }
 
   public sendHostMessage(message: HostMessage) {

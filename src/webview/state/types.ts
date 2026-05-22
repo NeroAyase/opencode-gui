@@ -8,6 +8,9 @@ import type {
   FileChangesInfo,
 } from "../types";
 
+/** Default context window limit (tokens) used when not provided by the server */
+export const DEFAULT_CONTEXT_LIMIT = 200000;
+
 export type SessionStatus = 
   | { type: "idle" }
   | { type: "busy" }

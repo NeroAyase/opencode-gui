@@ -66,17 +66,21 @@ function createOpenCode() {
       return; // Skip VSCode handshake
     }
 
+    let readyTimeout: ReturnType<typeof setTimeout> | null = null;
+
     const handleMessage = (e: MessageEvent) => {
       const data = e.data;
       
       // Handle error messages from host
       if (data?.type === "error") {
+        if (readyTimeout) { clearTimeout(readyTimeout); readyTimeout = null; }
         setHostError(data.message ?? "An unknown error occurred");
         return;
       }
       
       // Support both legacy 'init' and future 'server-url' message types
       if (data?.type === "init" || data?.type === "server-url") {
+        if (readyTimeout) { clearTimeout(readyTimeout); readyTimeout = null; }
         const url = data.serverUrl ?? data.url;
         if (!url) return;
 
@@ -110,10 +114,14 @@ function createOpenCode() {
     window.addEventListener("message", handleMessage);
     if (hasVscodeApi) {
       vscode.postMessage({ type: "ready" });
+      readyTimeout = setTimeout(() => {
+        setHostError("CodeFree-O server did not respond within 30 seconds. Please check that CodeFree-O is installed and configured.");
+      }, 30000);
     }
 
     onCleanup(() => {
       window.removeEventListener("message", handleMessage);
+      if (readyTimeout) { clearTimeout(readyTimeout); readyTimeout = null; }
     });
   });
 

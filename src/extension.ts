@@ -84,6 +84,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
   // Cleanup on deactivation
   context.subscriptions.push(openCodeService);
+  context.subscriptions.push(provider);
 
   logger.info("CodeFree-O webview provider registered");
 }

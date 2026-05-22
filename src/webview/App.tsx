@@ -561,13 +561,13 @@ function App() {
         const res = await createSession();
         const newSession = res?.data as Session | undefined;
         if (!newSession?.id) {
-          console.error("[App] Failed to create session");
+          logger.error("Failed to create session");
           return;
         }
         sessionId = newSession.id;
         sync.setCurrentSessionId(sessionId);
       } catch (err) {
-        console.error("[App] Failed to create session:", err);
+        logger.error("Failed to create session:", { error: err });
         return;
       }
     }
@@ -688,7 +688,7 @@ function App() {
         return;
       }
     } catch (err) {
-      console.error("[App] Queue sendPrompt failed:", err);
+      logger.error("Queue sendPrompt failed:", { error: err });
       const errorMessage = (err as Error).message;
       
       // Show all errors inline and clear queue + in-flight
@@ -773,6 +773,7 @@ function App() {
     
     // Set session and bootstrap to load messages
     sync.setCurrentSessionId(sessionId);
+    sync.setSessionError(sessionId, null);
     await sync.bootstrap();
   };
 
@@ -791,9 +792,10 @@ function App() {
       
       // Set new session and bootstrap
       sync.setCurrentSessionId(newSession.id);
+      sync.setSessionError(newSession.id, null);
       await sync.bootstrap();
     } catch (err) {
-      console.error("[App] Failed to create session:", err);
+      logger.error("Failed to create session:", { error: err });
     }
   };
 
@@ -867,7 +869,7 @@ function App() {
         return;
       }
     } catch (err) {
-      console.error("[App] Failed to edit message:", err);
+      logger.error("Failed to edit message:", { error: err });
       const errorMessage = (err as Error).message;
       
       // Show all errors inline and clear in-flight
@@ -892,7 +894,7 @@ function App() {
 
     const sessionId = permission?.sessionID || sync.currentSessionId();
     if (!sessionId || !sync.isReady()) {
-      console.error("[App] Cannot respond to permission: no session ID");
+      logger.error("Cannot respond to permission: no session ID");
       return;
     }
 
@@ -924,42 +926,6 @@ function App() {
         onRefreshSessions={refreshSessions}
       />
 
-      <Show when={!hasMessages()}>
-        <Show when={standalonePermissions().length > 0}>
-          <div class="standalone-permissions">
-            <For each={standalonePermissions()}>
-              {(permission) => (
-                <PermissionPrompt
-                  permission={permission}
-                  onResponse={handlePermissionResponse}
-                  workspaceRoot={sync.workspaceRoot()}
-                />
-              )}
-            </For>
-          </div>
-        </Show>
-        
-        <InputBar
-          value={input()}
-          onInput={setInput}
-          onSubmit={handleSubmit}
-          onCancel={handleCancel}
-          onQueue={handleQueueMessage}
-          disabled={!sync.isReady()}
-          isThinking={isThinking()}
-          selectedAgent={selectedAgent()}
-          agents={agents()}
-          onAgentChange={handleAgentChange}
-          queuedMessages={messageQueue()}
-          onRemoveFromQueue={handleRemoveFromQueue}
-          onEditQueuedMessage={handleEditQueuedMessage}
-          attachments={attachmentChips()}
-          onRemoveAttachment={handleRemoveAttachment}
-          onFileMentionClick={openFileFromMention}
-          editorRef={handleEditorMethodsReady}
-        />
-      </Show>
-
       <MessageList
         messages={messages()}
         isThinking={isThinking()}
@@ -981,41 +947,41 @@ function App() {
           <FileChangesSummary fileChanges={fileChanges()} />
           <ContextIndicator contextInfo={contextInfo()} />
         </div>
-        
-        <Show when={standalonePermissions().length > 0}>
-          <div class="standalone-permissions">
-            <For each={standalonePermissions()}>
-              {(permission) => (
-                <PermissionPrompt
-                  permission={permission}
-                  onResponse={handlePermissionResponse}
-                  workspaceRoot={sync.workspaceRoot()}
-                />
-              )}
-            </For>
-          </div>
-        </Show>
-        
-        <InputBar
-          value={input()}
-          onInput={setInput}
-          onSubmit={handleSubmit}
-          onCancel={handleCancel}
-          onQueue={handleQueueMessage}
-          disabled={!sync.isReady()}
-          isThinking={isThinking()}
-          selectedAgent={selectedAgent()}
-          agents={agents()}
-          onAgentChange={handleAgentChange}
-          queuedMessages={messageQueue()}
-          onRemoveFromQueue={handleRemoveFromQueue}
-          onEditQueuedMessage={handleEditQueuedMessage}
-          attachments={attachmentChips()}
-          onRemoveAttachment={handleRemoveAttachment}
-          onFileMentionClick={openFileFromMention}
-          editorRef={handleEditorMethodsReady}
-        />
       </Show>
+
+      <Show when={standalonePermissions().length > 0}>
+        <div class="standalone-permissions">
+          <For each={standalonePermissions()}>
+            {(permission) => (
+              <PermissionPrompt
+                permission={permission}
+                onResponse={handlePermissionResponse}
+                workspaceRoot={sync.workspaceRoot()}
+              />
+            )}
+          </For>
+        </div>
+      </Show>
+
+      <InputBar
+        value={input()}
+        onInput={setInput}
+        onSubmit={handleSubmit}
+        onCancel={handleCancel}
+        onQueue={handleQueueMessage}
+        disabled={!sync.isReady()}
+        isThinking={isThinking()}
+        selectedAgent={selectedAgent()}
+        agents={agents()}
+        onAgentChange={handleAgentChange}
+        queuedMessages={messageQueue()}
+        onRemoveFromQueue={handleRemoveFromQueue}
+        onEditQueuedMessage={handleEditQueuedMessage}
+        attachments={attachmentChips()}
+        onRemoveAttachment={handleRemoveAttachment}
+        onFileMentionClick={openFileFromMention}
+        editorRef={handleEditorMethodsReady}
+      />
     </div>
   );
 }

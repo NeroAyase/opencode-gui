@@ -18,7 +18,9 @@ import type {
   FileChangesInfo,
 } from "../types";
 import type { SyncState, SessionStatus } from "./types";
+import { DEFAULT_CONTEXT_LIMIT } from "./types";
 import { extractTextFromParts } from "./utils";
+import { logger } from "../utils/logger";
 
 /** API response for session.messages endpoint */
 interface MessageWithParts {
@@ -60,6 +62,7 @@ function toAgent(sdkAgent: SDKAgent): Agent {
     name: sdkAgent.name,
     description: sdkAgent.description,
     mode: sdkAgent.mode,
+    // builtIn is not in the SDK type definition but is present at runtime
     builtIn: (sdkAgent as any).builtIn,
     options: sdkAgent.color ? { color: sdkAgent.color } : undefined,
   };
@@ -154,7 +157,7 @@ export async function fetchBootstrapData(ctx: BootstrapContext): Promise<Bootstr
       permissionMap[perm.sessionID].push(perm);
     }
   } catch (err) {
-    console.error("[Sync] Failed to load permissions during bootstrap:", err);
+    logger.error("Failed to load permissions during bootstrap:", { error: err });
   }
 
   if (sessionId) {
@@ -165,7 +168,7 @@ export async function fetchBootstrapData(ctx: BootstrapContext): Promise<Bootstr
       ]);
 
       const rawMessages = messagesRes?.data ?? [];
-      console.log("[Bootstrap] Fetched messages", { count: rawMessages.length, sessionId });
+      logger.debug("Fetched messages", { count: rawMessages.length, sessionId });
 
       messageList = rawMessages
         .map((raw) => {
@@ -237,7 +240,7 @@ export async function fetchBootstrapData(ctx: BootstrapContext): Promise<Bootstr
           tokens.cache.read + 
           tokens.cache.write;
         if (usedTokens > 0) {
-          const limit = 200000;
+          const limit = DEFAULT_CONTEXT_LIMIT;
           contextInfo = {
             usedTokens,
             limitTokens: limit,
@@ -246,11 +249,11 @@ export async function fetchBootstrapData(ctx: BootstrapContext): Promise<Bootstr
         }
       }
     } catch (err) {
-      console.error("[Sync] Failed to load session messages:", err);
+      logger.error("Failed to load session messages:", { error: err });
     }
   }
 
-  console.log("[Bootstrap] Returning data", { 
+  logger.debug("Returning data", { 
     agentCount: agents.length, 
     sessionCount: sessions.length, 
     messageCount: messageList.length,
@@ -264,7 +267,7 @@ export function commitBootstrapData(
   sessionId: string | null,
   setStore: SetStoreFunction<SyncState>
 ): void {
-  console.log("[Bootstrap] Committing data", { 
+  logger.debug("Committing data", { 
     messageCount: data.messageList.length, 
     sessionId,
     firstMsgId: data.messageList[0]?.id 
@@ -274,7 +277,7 @@ export function commitBootstrapData(
     setStore("sessions", data.sessions);
     if (sessionId) {
       setStore("message", sessionId, data.messageList);
-      console.log("[Bootstrap] Committed messages to store for session", sessionId);
+      logger.debug("Committed messages to store for session", { sessionId });
     }
     // Don't use reconcile for parts - it replaces the internal store proxy,
     // which breaks reactive tracking for keys added later (e.g., assistant

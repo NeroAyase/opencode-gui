@@ -108,13 +108,14 @@ The extension automatically uses:
 1. Workspace `codefree.json` (if present in project root)
 2. Global CodeFree-O config at `~/.codefree-o/.config/codefree.json`
 
+Extension settings can also be configured via VSCode Settings (`Ctrl+,` / `Cmd+,`, search "CodeFree-O").
+
 Example workspace config:
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
   "model": "anthropic/claude-3-5-sonnet-20241022",
   "mcp": {
-    // MCP server configurations
   }
 }
 ```
@@ -155,21 +156,40 @@ codefree-o-gui/
 
 ✅ Simple chat interface
 ✅ Send prompts and get AI responses
+✅ Real-time streaming via SSE with auto-reconnect
 ✅ Thinking indicator during processing
 ✅ Message history (user and assistant)
+✅ Multi-session support with session switching
+✅ Message queue for queuing prompts while generating
+✅ Edit previous messages with undo/redo
+✅ File mentions from editor selection (context menu)
+✅ Permission prompts for tool execution
+✅ Context window usage indicator
+✅ File changes summary per session
 ✅ Workspace configuration support
 ✅ Full TypeScript type safety
 ✅ VSCode theme integration
+✅ Configurable via VSCode settings
 
-## Future Enhancements
+## Keyboard Shortcuts
 
-- Real-time streaming responses
-- File attachments from workspace
-- Markdown rendering in responses
-- Code syntax highlighting
-- Multi-session support
-- Session persistence
-- Undo/redo functionality
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+Shift+O` / `Cmd+Shift+O` | Focus CodeFree-O chat input |
+
+## Extension Settings
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `codefree-o.contextLimit` | `200000` | Context window token limit for the context indicator |
+
+## Extension Commands
+
+| Command | Description |
+|---------|-------------|
+| `CodeFree-O: Add Selection to Prompt` | Add selected text as a file mention to the chat input |
+| `CodeFree-O: New Session` | Create a new chat session |
+| `CodeFree-O: Focus Chat Input` | Focus the chat input box |
 
 ## Publishing
 
@@ -196,10 +216,11 @@ This publishes to both VS Code Marketplace and Open VSX Registry.
 - Configure authentication in `~/.codefree-o/.config/codefree.json`
 - If you installed CodeFree-O recently, fully restart VS Code so the extension host gets the updated PATH
 
-**"No response received"**
+**"No response received" / "Server did not respond within 30 seconds"**
 - Check API credentials are valid
 - Verify workspace has internet connection
 - Check VSCode Developer Console for errors (Help → Toggle Developer Tools)
+- If the timeout error appears, try restarting VS Code — the CodeFree-O server may have failed to start
 
 ## Feedback & Issues
 

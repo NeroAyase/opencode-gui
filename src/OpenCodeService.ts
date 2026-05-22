@@ -1,4 +1,8 @@
-import { createOpencode, type OpencodeClient } from "@srdcloud/codefree-o-sdk/v2";
+import {
+  createOpencodeServer,
+  createOpencodeClient,
+  type OpencodeClient,
+} from "@srdcloud/codefree-o-sdk/v2";
 import type { Message } from "@srdcloud/codefree-o-sdk/v2/client";
 import { spawnSync } from "child_process";
 import * as fs from "fs";
@@ -30,12 +34,8 @@ export class OpenCodeService {
 
     this.isInitializing = true;
 
-    const prevCwd = process.cwd();
-    const shouldChdir =
-      Boolean(workspaceRoot) && fs.existsSync(workspaceRoot as string);
-
-    if (shouldChdir) {
-      this.workspaceDir = workspaceRoot as string;
+    if (workspaceRoot && fs.existsSync(workspaceRoot)) {
+      this.workspaceDir = workspaceRoot;
     }
 
     try {
@@ -55,31 +55,32 @@ export class OpenCodeService {
 
       this.ensureOpencodeCliAvailable();
 
-      if (shouldChdir) {
-        process.chdir(workspaceRoot as string);
-      }
-
       logger.info("Starting CodeFree-O server...");
 
-      this.opencode = await createOpencode({
+      // Start the server process (no process.chdir needed — the server
+      // discovers config via OPENCODE_CONFIG_CONTENT env var and the client
+      // passes the workspace directory via x-codefree-o-directory header).
+      const server = await createOpencodeServer({
         hostname: "127.0.0.1",
         port: 0,
         timeout: 15000,
       });
 
-      logger.info(`CodeFree-O server started at ${this.opencode.server.url}`);
+      logger.info(`CodeFree-O server started at ${server.url}`);
+
+      // Create the client with the workspace directory so every request
+      // automatically includes the x-codefree-o-directory header.
+      const client = createOpencodeClient({
+        baseUrl: server.url,
+        directory: this.workspaceDir,
+      });
+
+      this.opencode = { client, server };
     } catch (error) {
       getLogger().error("Failed to initialize CodeFree-O", error);
       await this.showStartupError(error);
       throw error;
     } finally {
-      if (shouldChdir) {
-        try {
-          process.chdir(prevCwd);
-        } catch (e) {
-          getLogger().warn("Failed to restore working directory", e);
-        }
-      }
       this.isInitializing = false;
     }
   }

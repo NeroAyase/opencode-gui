@@ -9,6 +9,7 @@ import type {
 } from "@srdcloud/codefree-o-sdk/v2/client";
 import type { Message, MessagePart, Session, Permission } from "../types";
 import type { SyncState } from "./types";
+import { DEFAULT_CONTEXT_LIMIT } from "./types";
 import { binarySearch, findById, extractTextFromParts } from "./utils";
 import { logger } from "../utils/logger";
 
@@ -114,9 +115,7 @@ export function applyEvent(event: Event, ctx: EventHandlerContext): void {
       messageToSession.set(info.id, sessionId);
 
       if (!messages.length) {
-        console.log(
-          `[EventHandler] Creating message array for session sessionId=${sessionId} msgId=${msg.id}`
-        );
+        logger.debug("Creating message array for session", { sessionId, msgId: msg.id });
         setStore("message", sessionId, [msg]);
       } else if (result.found) {
         setStore("message", sessionId, result.index, msg);
@@ -150,7 +149,7 @@ export function applyEvent(event: Event, ctx: EventHandlerContext): void {
           tokens.cache.read +
           tokens.cache.write;
         if (usedTokens > 0) {
-          const limit = 200000; // Default context limit, could be fetched from config
+          const limit = DEFAULT_CONTEXT_LIMIT; // Default context limit, could be fetched from config
           setStore("contextInfo", {
             usedTokens,
             limitTokens: limit,
@@ -278,9 +277,9 @@ export function applyEvent(event: Event, ctx: EventHandlerContext): void {
     }
     
     case "message.part.updated": {
-      const { part: sdkPart } = event.properties as { part?: any };
+      const { part: sdkPart } = event.properties as { part?: Part };
       if (!sdkPart) {
-        console.warn("[EventHandler] No part in message.part.updated event", event);
+        logger.warn("No part in message.part.updated event", { event });
         break;
       }
       const part = toPart(sdkPart);

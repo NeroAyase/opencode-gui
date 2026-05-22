@@ -9,6 +9,7 @@ import {
   createEffect,
   createMemo,
   onCleanup,
+  on,
   batch,
   createContext,
   useContext,
@@ -173,7 +174,7 @@ function createSync() {
   async function bootstrap(): Promise<void> {
     const client = sdk.client();
     if (!client) {
-      console.warn("[Sync] Cannot bootstrap: SDK client not ready");
+      logger.warn("Cannot bootstrap: SDK client not ready");
       return;
     }
 
@@ -209,7 +210,7 @@ function createSync() {
         // Flush any events that arrived during bootstrap
         flushEventQueue();
       } catch (err) {
-        console.error("[Sync] Bootstrap failed:", err);
+        logger.error("Bootstrap failed:", err);
         setStore("status", { status: "error", message: (err as Error).message });
         throw err;
       }
@@ -275,7 +276,7 @@ function createSync() {
       const newCleanup = sdk.subscribeToEvents(handleEvent, handleStatus);
       setSseCleanup(() => newCleanup);
     } catch (err) {
-      console.error("[Sync] Failed to start SSE:", err);
+      logger.error("Failed to start SSE:", err);
     }
   }
 
@@ -299,12 +300,13 @@ function createSync() {
   });
 
   // Bootstrap on count change
-  createEffect(async () => {
-    const count = bootstrapCount();
+  createEffect(on(bootstrapCount, (count) => {
     if (count === 0) return;
     if (!sdk.isReady()) return;
-    await bootstrap();
-  });
+    bootstrap().catch((err) => {
+      logger.error("Bootstrap failed:", err);
+    });
+  }));
 
   // Initialize from SDK init data
   createEffect(() => {
@@ -320,6 +322,7 @@ function createSync() {
     flushEventQueue();
     const cleanup = sseCleanup();
     if (cleanup) cleanup();
+    sseStarted = false;
   });
 
   const getParts = (messageId: string) => store.part[messageId] ?? [];

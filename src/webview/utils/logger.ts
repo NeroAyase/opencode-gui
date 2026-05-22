@@ -47,7 +47,7 @@ function serializeForLog(value: unknown): string {
   }
 }
 
-function log(level: "debug" | "info" | "error", message: string, data?: unknown) {
+function log(level: "debug" | "info" | "warn" | "error", message: string, data?: unknown) {
   const vscode = getVscode();
   const serialized = data !== undefined ? serializeForLog(data) : undefined;
   
@@ -72,6 +72,9 @@ function log(level: "debug" | "info" | "error", message: string, data?: unknown)
     case "info":
       console.info(prefix, ...logData);
       break;
+    case "warn":
+      console.warn(prefix, ...logData);
+      break;
     case "error":
       console.error(prefix, ...logData);
       break;
@@ -81,5 +84,6 @@ function log(level: "debug" | "info" | "error", message: string, data?: unknown)
 export const logger = {
   debug: (message: string, data?: unknown) => log("debug", message, data),
   info: (message: string, data?: unknown) => log("info", message, data),
+  warn: (message: string, data?: unknown) => log("warn", message, data),
   error: (message: string, data?: unknown) => log("error", message, data),
 };
