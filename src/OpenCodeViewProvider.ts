@@ -141,6 +141,9 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider, vscode.
       case "agent-changed":
         await this._handleAgentChanged(message.agent);
         break;
+      case "select-agent":
+        await this._handleSelectAgent();
+        break;
       case "open-file":
         await this._handleOpenFile(
           message.url,
@@ -150,6 +153,18 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider, vscode.
         break;
       case "search-files":
         await this._handleSearchFiles(message.query);
+        break;
+      case "select-model":
+        await this._handleSelectModel();
+        break;
+      case "provider-list":
+        await this._handleProviderList();
+        break;
+      case "command-list":
+        await this._handleCommandList();
+        break;
+      case "command-execute":
+        await this._handleCommandExecute(message);
         break;
     }
   }
@@ -300,6 +315,239 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider, vscode.
     await this._globalState.update(LAST_AGENT_KEY, agent);
     const logger = getLogger();
     logger.info("[ViewProvider] Agent selection persisted:", agent);
+  }
+
+  private async _handleSelectAgent() {
+    const client = this._openCodeService.getClient();
+    if (!client) {
+      vscode.window.showWarningMessage("CodeFree-O is not ready yet.");
+      return;
+    }
+
+    let agents: Array<{ name: string; description?: string; mode: string; hidden?: boolean; color?: string }>;
+    try {
+      const result = await client.app.agents();
+      if (result.error || !result.data) {
+        vscode.window.showErrorMessage("Failed to fetch agents from CodeFree-O.");
+        return;
+      }
+      agents = result.data;
+    } catch (error) {
+      const logger = getLogger();
+      logger.error("[ViewProvider] Failed to fetch agents", { error });
+      vscode.window.showErrorMessage("Failed to fetch agents from CodeFree-O.");
+      return;
+    }
+
+    // Filter out subagents and hidden agents
+    const visibleAgents = agents.filter(
+      (a) => a.mode !== "subagent" && !a.hidden,
+    );
+
+    if (visibleAgents.length === 0) {
+      vscode.window.showInformationMessage("No agents available.");
+      return;
+    }
+
+    const items: vscode.QuickPickItem[] = visibleAgents.map((agent) => ({
+      label: agent.name,
+      description: agent.description,
+    }));
+
+    const selected = await vscode.window.showQuickPick(items, {
+      placeHolder: "Select an agent",
+      title: "CodeFree-O: Switch Agent",
+    });
+
+    if (!selected) return;
+
+    const agentName = selected.label;
+
+    // Persist the selection
+    await this._globalState.update(LAST_AGENT_KEY, agentName);
+
+    // Notify the webview
+    this._sendMessage({ type: "agent-selected", agent: agentName });
+  }
+
+  private async _handleSelectModel() {
+    const client = this._openCodeService.getClient();
+    if (!client) {
+      vscode.window.showWarningMessage("CodeFree-O is not ready yet.");
+      return;
+    }
+
+    let providers: Array<{ id: string; name: string; models: Record<string, { id: string; name: string; providerID: string }> }>;
+    try {
+      const dir = this._openCodeService.getWorkspaceRoot();
+      const result = await client.provider.list(dir ? { directory: dir } : undefined);
+      if (result.error || !result.data) {
+        vscode.window.showErrorMessage("Failed to fetch providers from CodeFree-O.");
+        return;
+      }
+      providers = result.data.all;
+    } catch (error) {
+      const logger = getLogger();
+      logger.error("[ViewProvider] Failed to fetch providers", { error });
+      vscode.window.showErrorMessage("Failed to fetch providers from CodeFree-O.");
+      return;
+    }
+
+    // Build QuickPick items grouped by provider
+    const items: vscode.QuickPickItem[] = [];
+    for (const provider of providers) {
+      const modelEntries = Object.values(provider.models);
+      if (modelEntries.length === 0) continue;
+
+      // Add provider group header
+      items.push({
+        label: provider.name || provider.id,
+        kind: vscode.QuickPickItemKind.Separator,
+      });
+
+      for (const model of modelEntries) {
+        items.push({
+          label: model.name || model.id,
+          description: provider.id,
+          detail: `${provider.id}/${model.id}`,
+        });
+      }
+    }
+
+    if (items.length === 0) {
+      vscode.window.showInformationMessage("No models available.");
+      return;
+    }
+
+    const selected = await vscode.window.showQuickPick(items, {
+      placeHolder: "Select a model",
+      title: "CodeFree-O: Switch Model",
+    });
+
+    if (!selected || !selected.detail) return;
+
+    // Parse "providerID/modelID" from the detail field
+    const detail = selected.detail;
+    const slashIndex = detail.indexOf("/");
+    if (slashIndex === -1) return;
+
+    const providerID = detail.substring(0, slashIndex);
+    const modelID = detail.substring(slashIndex + 1);
+
+    // Notify the webview
+    this._sendMessage({ type: "model-selected", providerID, modelID });
+  }
+
+  private async _handleProviderList() {
+    const client = this._openCodeService.getClient();
+    if (!client) {
+      this._sendMessage({
+        type: "provider-list-result",
+        providers: [],
+      });
+      return;
+    }
+
+    try {
+      const dir = this._openCodeService.getWorkspaceRoot();
+      const result = await client.provider.list(dir ? { directory: dir } : undefined);
+      if (result.error || !result.data) {
+        this._sendMessage({
+          type: "provider-list-result",
+          providers: [],
+        });
+        return;
+      }
+
+      const providers = result.data.all.map((p) => ({
+        id: p.id,
+        name: p.name,
+        models: Object.values(p.models).map((m) => ({
+          id: m.id,
+          name: m.name,
+          providerID: m.providerID,
+        })),
+      }));
+
+      this._sendMessage({
+        type: "provider-list-result",
+        providers,
+      });
+    } catch (error) {
+      const logger = getLogger();
+      logger.error("[ViewProvider] Failed to fetch provider list", { error });
+      this._sendMessage({
+        type: "provider-list-result",
+        providers: [],
+      });
+    }
+  }
+
+  private async _handleCommandList() {
+    const client = this._openCodeService.getClient();
+    if (!client) {
+      this._sendMessage({
+        type: "command-list-result",
+        commands: [],
+      });
+      return;
+    }
+
+    try {
+      const dir = this._openCodeService.getWorkspaceRoot();
+      const result = await client.command.list(dir ? { directory: dir } : undefined);
+      if (result.error || !result.data) {
+        this._sendMessage({
+          type: "command-list-result",
+          commands: [],
+        });
+        return;
+      }
+
+      const commands = result.data.map((cmd) => ({
+        name: cmd.name,
+        description: cmd.description,
+      }));
+
+      this._sendMessage({
+        type: "command-list-result",
+        commands,
+      });
+    } catch (error) {
+      const logger = getLogger();
+      logger.error("[ViewProvider] Failed to fetch command list", { error });
+      this._sendMessage({
+        type: "command-list-result",
+        commands: [],
+      });
+    }
+  }
+
+  private async _handleCommandExecute(
+    message: { command: string; arguments?: string[]; sessionID: string; agent?: string; model?: string },
+  ) {
+    const client = this._openCodeService.getClient();
+    if (!client) {
+      const logger = getLogger();
+      logger.error("[ViewProvider] Cannot execute command: client not ready");
+      return;
+    }
+
+    try {
+      await client.session.command({
+        sessionID: message.sessionID,
+        command: message.command,
+        ...(message.arguments?.length ? { arguments: message.arguments.join(" ") } : {}),
+        ...(message.agent ? { agent: message.agent } : {}),
+        ...(message.model ? { model: message.model } : {}),
+      });
+    } catch (error) {
+      const logger = getLogger();
+      logger.error("[ViewProvider] Failed to execute command", {
+        command: message.command,
+        error,
+      });
+    }
   }
 
   // SSE Proxy handlers using resilient SseClient

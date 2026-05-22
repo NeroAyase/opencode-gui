@@ -1,8 +1,11 @@
 import { createSignal, For, onCleanup, onMount, Show } from "solid-js";
 import type { Agent } from "../types";
 import type { QueuedMessage } from "../App";
+import type { ModelSelection } from "../utils/modelResolution";
 import { AgentSwitcher } from "./AgentSwitcher";
+import { ModelSelector } from "./ModelSelector";
 import { TiptapEditor, type TiptapEditorMethods } from "./TiptapEditor";
+import type { CommandItem } from "./CommandPalette";
 import { vscode } from "../utils/vscode";
 
 interface InputBarProps {
@@ -16,12 +19,16 @@ interface InputBarProps {
   selectedAgent: string | null;
   agents: Agent[];
   onAgentChange: (agentName: string) => void;
+  selectedModel: ModelSelection | null;
+  onModelSelect: (providerID: string, modelID: string) => void;
   queuedMessages: QueuedMessage[];
   onRemoveFromQueue: (id: string) => void;
   onEditQueuedMessage: (id: string) => void;
   attachments: InputAttachment[];
   onRemoveAttachment: (id: string) => void;
   onFileMentionClick?: (filePath: string) => void;
+  commands?: CommandItem[];
+  onCommandSelect?: (command: CommandItem) => void;
   editorRef?: (methods: TiptapEditorMethods) => void;
 }
 
@@ -98,6 +105,7 @@ export function InputBar(props: InputBarProps) {
     if (
       !target.closest("button") &&
       !target.closest(".agent-switcher-button") &&
+      !target.closest(".model-selector-button") &&
       !target.closest(".queued-message")
     ) {
       editorMethods?.focus();
@@ -165,6 +173,8 @@ export function InputBar(props: InputBarProps) {
           disabled={props.disabled}
           searchFiles={searchFiles}
           onFileMentionClick={props.onFileMentionClick}
+          commands={props.commands}
+          onCommandSelect={props.onCommandSelect}
           ref={(methods) => {
             editorMethods = methods;
             props.editorRef?.(methods);
@@ -176,6 +186,12 @@ export function InputBar(props: InputBarProps) {
               agents={props.agents}
               selectedAgent={props.selectedAgent}
               onAgentChange={props.onAgentChange}
+            />
+          </Show>
+          <Show when={!props.isThinking}>
+            <ModelSelector
+              currentModel={props.selectedModel}
+              onModelSelect={props.onModelSelect}
             />
           </Show>
           <Show when={showStopButton()}>

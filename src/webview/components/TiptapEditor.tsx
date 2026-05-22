@@ -6,6 +6,8 @@ import Text from "@tiptap/extension-text";
 import type { JSONContent } from "@tiptap/core";
 import { FileMention } from "../extensions/FileMention";
 import { createFileMentionSuggestion } from "../utils/fileMentionSuggestion";
+import { SlashCommand } from "../extensions/SlashCommand";
+import type { CommandItem } from "../components/CommandPalette";
 import {
   encodeFileMentionReference,
   formatFileMentionLabel,
@@ -28,11 +30,14 @@ export interface TiptapEditorProps {
   disabled?: boolean;
   searchFiles: (query: string) => Promise<string[]>;
   onFileMentionClick?: (filePath: string) => void;
+  commands?: CommandItem[];
+  onCommandSelect?: (command: CommandItem) => void;
   ref?: (methods: TiptapEditorMethods) => void;
 }
 
 export function TiptapEditor(props: TiptapEditorProps) {
   const [isSuggestionActive, setIsSuggestionActive] = createSignal(false);
+  const [isSlashCommandActive, setIsSlashCommandActive] = createSignal(false);
   let initializedEditor: ReturnType<ReturnType<typeof createEditor>> | null = null;
   let exposedEditor: ReturnType<ReturnType<typeof createEditor>> | null = null;
   let syncedValueEditor: ReturnType<ReturnType<typeof createEditor>> | null = null;
@@ -72,6 +77,23 @@ export function TiptapEditor(props: TiptapEditorProps) {
           } as any;
         })(),
       }),
+      SlashCommand.configure({
+        commands: props.commands ?? [],
+        onCommandSelect: (command: CommandItem) => {
+          props.onCommandSelect?.(command);
+        },
+        onSuggestionStart: () => {
+          setIsSlashCommandActive(true);
+        },
+        onSuggestionExit: () => {
+          setIsSlashCommandActive(false);
+        },
+        suggestion: (() => {
+          // We need to intercept the render to track suggestion active state
+          // The actual suggestion config is handled inside SlashCommand extension
+          return {};
+        })(),
+      }),
     ],
     autofocus: true,
     content: props.value,
@@ -88,8 +110,8 @@ export function TiptapEditor(props: TiptapEditorProps) {
         // If the suggestion plugin returns true, it handled the event
         // Otherwise, we can handle our submit shortcuts
         
-        // Don't handle keyboard shortcuts if suggestion dropdown is active
-        if (isSuggestionActive()) {
+        // Don't handle keyboard shortcuts if any suggestion dropdown is active
+        if (isSuggestionActive() || isSlashCommandActive()) {
           return false; // Let Tiptap handle it
         }
 

@@ -1,6 +1,8 @@
 import { createSignal, createMemo, Show, onMount, onCleanup, createEffect, For } from "solid-js";
 import { InputBar } from "./components/InputBar";
+import { QuestionDock } from "./components/QuestionDock";
 import type { TiptapEditorMethods } from "./components/TiptapEditor";
+import type { CommandItem } from "./components/CommandPalette";
 import { MessageList } from "./components/MessageList";
 import { TopBar } from "./components/TopBar";
 import { ContextIndicator } from "./components/ContextIndicator";
@@ -12,6 +14,7 @@ import { useSync } from "./state/sync";
 import type { FilePartInput } from "@srdcloud/codefree-o-sdk/v2/client";
 import type { Message, Agent, Session, Permission, FileChangesInfo, MessagePart } from "./types";
 import { parseHostMessage } from "./types";
+import type { ModelSelection } from "./utils/modelResolution";
 
 export interface QueuedMessage {
   id: string;
@@ -65,6 +68,7 @@ function App() {
   const [selectionAttachmentsBySession, setSelectionAttachmentsBySession] = createSignal<
     Map<string, SelectionAttachment[]>
   >(new Map());
+  const [selectedModel, setSelectedModel] = createSignal<ModelSelection | null>(null);
   
   // Editing state for previous messages
   const [editingMessageId, setEditingMessageId] = createSignal<string | null>(null);
@@ -89,11 +93,16 @@ function App() {
     createSession,
     abortSession,
     sendPrompt,
+    sendCommand,
+    getCommands,
     respondToPermission,
     revertToMessage,
     hostError,
     clearHostError,
   } = useCodeFreeO();
+
+  // Slash commands
+  const [commands, setCommands] = createSignal<CommandItem[]>([]);
 
   // Get the current session key for drafts/agents
   const sessionKey = () => sync.currentSessionId() || NEW_SESSION_KEY;
@@ -208,6 +217,7 @@ function App() {
   const agents = sync.agents;
   const sessions = sync.sessions;
   const pendingPermissions = sync.aggregatedPermissions;
+  const questions = sync.questions;
   const contextInfo = sync.contextInfo;
   const fileChanges = sync.fileChanges;
   const isThinking = sync.isThinking;
@@ -437,18 +447,30 @@ function App() {
     const handleHostMessage = (event: MessageEvent) => {
       const parsed = parseHostMessage(event.data);
       if (!parsed) return;
-      if (parsed.type !== "editor-selection") return;
 
-      focusEditorOrQueue();
-      const normalizedRange = normalizeSelectionRange(
-        parsed.selection?.startLine,
-        parsed.selection?.endLine
-      );
-      insertMentionOrQueue({
-        filePath: parsed.filePath,
-        startLine: normalizedRange.startLine,
-        endLine: normalizedRange.endLine,
-      });
+      if (parsed.type === "editor-selection") {
+        focusEditorOrQueue();
+        const normalizedRange = normalizeSelectionRange(
+          parsed.selection?.startLine,
+          parsed.selection?.endLine
+        );
+        insertMentionOrQueue({
+          filePath: parsed.filePath,
+          startLine: normalizedRange.startLine,
+          endLine: normalizedRange.endLine,
+        });
+        return;
+      }
+
+      if (parsed.type === "agent-selected") {
+        setSelectedAgent(parsed.agent);
+        return;
+      }
+
+      if (parsed.type === "model-selected") {
+        setSelectedModel({ providerID: parsed.providerID, modelID: parsed.modelID });
+        return;
+      }
     };
 
     window.addEventListener("message", handleHostMessage);
@@ -467,6 +489,19 @@ function App() {
     } else if (!defaultAgent() && agentList.length > 0) {
       setDefaultAgent(agentList[0].name);
     }
+  });
+
+  // Fetch slash commands once the client is ready
+  createEffect(() => {
+    if (!sync.isReady()) return;
+    getCommands()?.then((result) => {
+      if (result?.data) {
+        const cmds = result.data as Array<{ name: string; description?: string }>;
+        setCommands(cmds.map((cmd) => ({ name: cmd.name, description: cmd.description })));
+      }
+    }).catch((err) => {
+      logger.error("Failed to fetch commands", { error: err });
+    });
   });
 
   // Restore editor content when session changes
@@ -595,7 +630,7 @@ function App() {
     logger.info("Sending prompt", { sessionId, messageID, textLen: text.length });
 
     try {
-      const result = await sendPrompt(sessionId, text, agent, extraParts, messageID);
+      const result = await sendPrompt(sessionId, text, agent, extraParts, messageID, selectedModel());
       
       // Log the full result for debugging
       const responseStatus = getResponseStatus(result);
@@ -672,7 +707,7 @@ function App() {
     try {
       const extraParts = buildSelectionParts(next.attachments);
       
-      const result = await sendPrompt(sessionId, next.text, next.agent, extraParts, messageID);
+      const result = await sendPrompt(sessionId, next.text, next.agent, extraParts, messageID, selectedModel());
       const responseStatus = getResponseStatus(result);
       
       // Check for SDK error in result (SDK doesn't throw by default)
@@ -822,6 +857,45 @@ function App() {
     }
   };
 
+  const handleCommandSelect = async (command: CommandItem) => {
+    let sessionId = sync.currentSessionId();
+    if (!sessionId) {
+      try {
+        const res = await createSession();
+        const newSession = res?.data as Session | undefined;
+        if (!newSession?.id) return;
+        sessionId = newSession.id;
+        sync.setCurrentSessionId(sessionId);
+      } catch (err) {
+        logger.error("Failed to create session for command:", { error: err });
+        return;
+      }
+    }
+
+    // Clear editor
+    setInput("");
+    if (editorMethods) editorMethods.clear();
+    const key = sessionKey();
+    setDraftContents((prev) => { const next = new Map(prev); next.delete(key); return next; });
+    sync.setThinking(sessionId, true);
+
+    try {
+      const result = await sendCommand(sessionId, command.name);
+      if (result?.error) {
+        const errorMessage = getSdkErrorMessage(result.error);
+        sync.setThinking(sessionId, false);
+        sync.setSessionError(sessionId, errorMessage);
+      }
+    } catch (err) {
+      sync.setThinking(sessionId, false);
+      sync.setSessionError(sessionId, (err as Error).message);
+    }
+  };
+
+  const handleModelSelect = (providerID: string, modelID: string) => {
+    setSelectedModel({ providerID, modelID });
+  };
+
   const handleStartEdit = (messageId: string, text: string) => {
     setEditingMessageId(messageId);
     setEditingText(text);
@@ -853,7 +927,7 @@ function App() {
 
     try {
       await revertToMessage(sessionId, messageId);
-      const result = await sendPrompt(sessionId, newText.trim(), agent, [], newMessageID);
+      const result = await sendPrompt(sessionId, newText.trim(), agent, [], newMessageID, selectedModel());
       const responseStatus = getResponseStatus(result);
       
       // Check for SDK error in result (SDK doesn't throw by default)
@@ -983,25 +1057,38 @@ function App() {
         </div>
       </Show>
 
-      <InputBar
-        value={input()}
-        onInput={setInput}
-        onSubmit={handleSubmit}
-        onCancel={handleCancel}
-        onQueue={handleQueueMessage}
-        disabled={!sync.isReady()}
-        isThinking={isThinking()}
-        selectedAgent={selectedAgent()}
-        agents={agents()}
-        onAgentChange={handleAgentChange}
-        queuedMessages={messageQueue()}
-        onRemoveFromQueue={handleRemoveFromQueue}
-        onEditQueuedMessage={handleEditQueuedMessage}
-        attachments={attachmentChips()}
-        onRemoveAttachment={handleRemoveAttachment}
-        onFileMentionClick={openFileFromMention}
-        editorRef={handleEditorMethodsReady}
-      />
+      <Show when={questions().length > 0} fallback={
+        <InputBar
+          value={input()}
+          onInput={setInput}
+          onSubmit={handleSubmit}
+          onCancel={handleCancel}
+          onQueue={handleQueueMessage}
+          disabled={!sync.isReady()}
+          isThinking={isThinking()}
+          selectedAgent={selectedAgent()}
+          agents={agents()}
+          onAgentChange={handleAgentChange}
+          selectedModel={selectedModel()}
+          onModelSelect={handleModelSelect}
+          queuedMessages={messageQueue()}
+          onRemoveFromQueue={handleRemoveFromQueue}
+          onEditQueuedMessage={handleEditQueuedMessage}
+          attachments={attachmentChips()}
+          onRemoveAttachment={handleRemoveAttachment}
+          onFileMentionClick={openFileFromMention}
+          commands={commands()}
+          onCommandSelect={handleCommandSelect}
+          editorRef={handleEditorMethodsReady}
+        />
+      }>
+        <QuestionDock
+          questions={questions()}
+          onReply={(requestID, answers) => sync.replyToQuestion(requestID, answers)}
+          onReject={(requestID) => sync.rejectQuestion(requestID)}
+          isReady={sync.isReady()}
+        />
+      </Show>
     </div>
   );
 }

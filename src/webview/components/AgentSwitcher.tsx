@@ -1,5 +1,6 @@
 
 import type { Agent } from "../types";
+import { vscode } from "../utils/vscode";
 
 interface AgentSwitcherProps {
   agents: Agent[];
@@ -13,13 +14,8 @@ export function AgentSwitcher(props: AgentSwitcherProps) {
     return props.agents.find(a => a.name === name);
   };
   
-  const cycleAgent = () => {
-    const agentList = props.agents;
-    if (agentList.length === 0) return;
-    
-    const currentIndex = agentList.findIndex(a => a.name === props.selectedAgent);
-    const nextIndex = (currentIndex + 1) % agentList.length;
-    props.onAgentChange(agentList[nextIndex].name);
+  const handleSelectAgent = () => {
+    vscode.postMessage({ type: "select-agent" });
   };
   
   const agentColor = () => currentAgent()?.options?.color;
@@ -28,7 +24,7 @@ export function AgentSwitcher(props: AgentSwitcherProps) {
     <button
       type="button"
       class="agent-switcher-button"
-      onClick={cycleAgent}
+      onClick={handleSelectAgent}
       aria-label="Switch agent"
       title={currentAgent()?.description || 'Switch agent'}
       style={agentColor() ? { color: agentColor() } : {}}

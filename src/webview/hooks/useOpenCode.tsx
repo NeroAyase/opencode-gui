@@ -127,12 +127,14 @@ function createOpenCode() {
 
   // High-level helper to send a prompt
   // Accepts optional messageID for idempotent sends
+  // Accepts optional model for provider/model override
   async function sendPrompt(
     sessionId: string,
     text: string,
     agent?: string | null,
     extraParts: PromptPartInput[] = [],
-    messageID?: string
+    messageID?: string,
+    model?: { providerID: string; modelID: string } | null,
   ) {
     const c = client();
     if (!c) throw new Error("Not connected");
@@ -142,6 +144,7 @@ function createOpenCode() {
       parts: [{ type: "text", text }, ...extraParts],
       ...(agent ? { agent } : {}),
       ...(messageID ? { messageID } : {}),
+      ...(model ? { model: { providerID: model.providerID, modelID: model.modelID } } : {}),
     });
   }
 
@@ -233,6 +236,26 @@ function createOpenCode() {
     });
   }
 
+  // Execute a slash command
+  async function sendCommand(
+    sessionId: string,
+    command: string,
+    args?: string[],
+    agent?: string | null,
+    model?: string | null,
+  ) {
+    const c = client();
+    if (!c) throw new Error("Not connected");
+
+    return c.session.command({
+      sessionID: sessionId,
+      command,
+      ...(args?.length ? { arguments: args.join(" ") } : {}),
+      ...(agent ? { agent } : {}),
+      ...(model ? { model } : {}),
+    });
+  }
+
   return {
     client,
     isReady,
@@ -258,8 +281,17 @@ function createOpenCode() {
       return client()?.config.get(dir ? { directory: dir } : undefined);
     },
     abortSession: (id: string) => client()?.session.abort({ sessionID: id }),
+    getProviders: () => {
+      const dir = workspaceRoot();
+      return client()?.provider.list(dir ? { directory: dir } : undefined);
+    },
+    getCommands: () => {
+      const dir = workspaceRoot();
+      return client()?.command.list(dir ? { directory: dir } : undefined);
+    },
     // High-level helpers
     sendPrompt,
+    sendCommand,
     subscribeToEvents,
     respondToPermission,
     replyToQuestion,

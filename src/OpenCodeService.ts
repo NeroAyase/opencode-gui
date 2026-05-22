@@ -188,4 +188,8 @@ export class OpenCodeService {
   getServerUrl(): string | undefined {
     return this.opencode?.server.url;
   }
+
+  getClient(): OpencodeClient | undefined {
+    return this.opencode?.client;
+  }
 }

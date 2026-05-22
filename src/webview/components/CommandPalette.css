@@ -1,0 +1,52 @@
+.command-palette {
+  min-width: 300px;
+  max-width: 425px;
+  max-height: 194px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--vscode-quickInput-background);
+  border: 1px solid var(--vscode-widget-border);
+  border-radius: 3px;
+  box-shadow: var(--shadow-subtle);
+  padding: 0;
+}
+
+.command-palette__empty {
+  padding: 4px 8px;
+  color: var(--vscode-disabledForeground, #6c6c6c);
+  font-size: 12px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+}
+
+.command-palette__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  cursor: pointer;
+  font-size: 12px;
+  height: 24px;
+  color: var(--vscode-quickInput-foreground, #cccccc);
+}
+
+.command-palette__item:hover,
+.command-palette__item--selected {
+  background: var(--vscode-list-hoverBackground, #2a2d2e);
+}
+
+.command-palette__name {
+  flex-shrink: 0;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.command-palette__description {
+  flex-grow: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--vscode-descriptionForeground, #6c6c6c);
+  font-size: 11px;
+}
