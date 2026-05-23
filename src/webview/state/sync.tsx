@@ -83,6 +83,7 @@ function createSync() {
         }));
         setStore("permission", produce((draft) => { delete draft[prevId]; }));
         setStore("question", produce((draft) => { delete draft[prevId]; }));
+        setStore("todo", produce((draft) => { delete draft[prevId]; }));
       });
       // Clean up messageToSession mapping
       for (const msg of prevMessages) {
@@ -122,6 +123,12 @@ function createSync() {
     const sessionId = currentSessionId();
     if (!sessionId) return [];
     return store.question[sessionId] ?? [];
+  });
+
+  const todos = createMemo(() => {
+    const sessionId = currentSessionId();
+    if (!sessionId) return [];
+    return store.todo[sessionId] ?? [];
   });
 
   // Aggregate permissions across current session and its children
@@ -356,6 +363,7 @@ function createSync() {
     permissions,
     aggregatedPermissions,
     questions,
+    todos,
     isThinking,
     sessionError,
     sessionStatus,

@@ -27,6 +27,7 @@ interface InputBarProps {
   attachments: InputAttachment[];
   onRemoveAttachment: (id: string) => void;
   onFileMentionClick?: (filePath: string) => void;
+  onImagePaste?: (dataUrl: string, filename: string) => void;
   commands?: CommandItem[];
   onCommandSelect?: (command: CommandItem) => void;
   editorRef?: (methods: TiptapEditorMethods) => void;
@@ -36,6 +37,7 @@ interface InputAttachment {
   id: string;
   label: string;
   title?: string;
+  imageUrl?: string; // data URL for image preview
 }
 
 export function InputBar(props: InputBarProps) {
@@ -151,7 +153,17 @@ export function InputBar(props: InputBarProps) {
           <div class="input-attachments">
             <For each={props.attachments}>
               {(attachment) => (
-                <div class="input-attachment" title={attachment.title ?? attachment.label}>
+                <div
+                  class={`input-attachment${attachment.imageUrl ? " input-attachment--image" : ""}`}
+                  title={attachment.title ?? attachment.label}
+                >
+                  <Show when={attachment.imageUrl}>
+                    <img
+                      class="input-attachment__image"
+                      src={attachment.imageUrl}
+                      alt={attachment.label}
+                    />
+                  </Show>
                   <span class="input-attachment__text">{attachment.label}</span>
                   <button
                     type="button"
@@ -173,6 +185,7 @@ export function InputBar(props: InputBarProps) {
           disabled={props.disabled}
           searchFiles={searchFiles}
           onFileMentionClick={props.onFileMentionClick}
+          onImagePaste={props.onImagePaste}
           commands={props.commands}
           onCommandSelect={props.onCommandSelect}
           ref={(methods) => {

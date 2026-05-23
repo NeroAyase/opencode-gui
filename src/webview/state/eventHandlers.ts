@@ -9,7 +9,7 @@ import type {
   AssistantMessage,
 } from "@srdcloud/codefree-o-sdk/v2/client";
 import type { Message, MessagePart, Session, Permission, QuestionRequest } from "../types";
-import type { SyncState } from "./types";
+import type { SyncState, Todo } from "./types";
 import { DEFAULT_CONTEXT_LIMIT } from "./types";
 import { binarySearch, findById, extractTextFromParts } from "./utils";
 import { logger } from "../utils/logger";
@@ -603,6 +603,16 @@ export function applyEvent(event: Event, ctx: EventHandlerContext): void {
         setStore("question", sessionId, produce((draft) => {
           draft.splice(result.index, 1);
         }));
+      }
+      break;
+    }
+
+    case "todo.updated": {
+      const { sessionID, todos } = event.properties as { sessionID?: string; todos?: Todo[] };
+      const sessionId = sessionID ?? currentSessionId();
+      if (!sessionId) break;
+      if (todos) {
+        setStore("todo", sessionId, todos);
       }
       break;
     }

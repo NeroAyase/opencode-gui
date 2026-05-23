@@ -178,6 +178,15 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider, vscode.
       case "session-share":
         await this._handleSessionShare(message);
         break;
+      case "session-delete":
+        await this._handleSessionDelete(message);
+        break;
+      case "session-rename":
+        await this._handleSessionRename(message);
+        break;
+      case "copy-text":
+        await vscode.env.clipboard.writeText(message.text);
+        break;
       case "open-diff":
         this._handleOpenDiff(message.filePath, message.before, message.after, message.patch);
         break;
@@ -657,6 +666,63 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider, vscode.
       const logger = getLogger();
       logger.error("[ViewProvider] Failed to share session", { error });
       vscode.window.showErrorMessage("Failed to share session.");
+    }
+  }
+
+  private async _handleSessionDelete(message: { sessionID: string }) {
+    const confirmed = await vscode.window.showWarningMessage(
+      "Are you sure you want to delete this session?",
+      { modal: true },
+      "Delete",
+    );
+    if (confirmed !== "Delete") return;
+
+    const client = this._openCodeService.getClient();
+    if (!client) {
+      vscode.window.showWarningMessage("CodeFree-O is not ready yet.");
+      return;
+    }
+
+    try {
+      const dir = this._openCodeService.getWorkspaceRoot();
+      await client.session.delete({
+        sessionID: message.sessionID,
+        ...(dir ? { directory: dir } : {}),
+      });
+      this._sendMessage({ type: "session-deleted", sessionID: message.sessionID });
+    } catch (error) {
+      const logger = getLogger();
+      logger.error("[ViewProvider] Failed to delete session", { error });
+      vscode.window.showErrorMessage("Failed to delete session.");
+    }
+  }
+
+  private async _handleSessionRename(message: { sessionID: string; title: string }) {
+    const newTitle = await vscode.window.showInputBox({
+      prompt: "Enter new session title",
+      value: message.title,
+      title: "Rename Session",
+    });
+    if (!newTitle || newTitle === message.title) return;
+
+    const client = this._openCodeService.getClient();
+    if (!client) {
+      vscode.window.showWarningMessage("CodeFree-O is not ready yet.");
+      return;
+    }
+
+    try {
+      const dir = this._openCodeService.getWorkspaceRoot();
+      await client.session.update({
+        sessionID: message.sessionID,
+        title: newTitle,
+        ...(dir ? { directory: dir } : {}),
+      });
+      this._sendMessage({ type: "session-renamed", sessionID: message.sessionID, title: newTitle });
+    } catch (error) {
+      const logger = getLogger();
+      logger.error("[ViewProvider] Failed to rename session", { error });
+      vscode.window.showErrorMessage("Failed to rename session.");
     }
   }
 

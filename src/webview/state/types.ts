@@ -25,6 +25,12 @@ export type SyncStatus =
   | { status: "bootstrapping" }
   | { status: "error"; message: string };
 
+export interface Todo {
+  content: string;
+  status: string;
+  priority: string;
+}
+
 export interface SyncState {
   status: SyncStatus;
   agents: Agent[];
@@ -37,6 +43,8 @@ export interface SyncState {
   permission: { [sessionID: string]: Permission[] };
   /** Questions keyed by sessionID */
   question: { [sessionID: string]: QuestionRequest[] };
+  /** Todos keyed by sessionID */
+  todo: { [sessionID: string]: Todo[] };
   /** Session status keyed by sessionID */
   sessionStatus: { [sessionID: string]: SessionStatus };
   /** UI state */
@@ -55,6 +63,7 @@ export function createEmptyState(): SyncState {
     part: {},
     permission: {},
     question: {},
+    todo: {},
     sessionStatus: {},
     contextInfo: null,
     fileChanges: null,

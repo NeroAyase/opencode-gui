@@ -14,6 +14,8 @@ interface TopBarProps {
   onSessionSelect: (sessionId: string) => void;
   onNewSession: () => void;
   onRefreshSessions: () => Promise<void>;
+  onDeleteSession?: (sessionId: string) => void;
+  onRenameSession?: (sessionId: string, title: string) => void;
 }
 
 export function TopBar(props: TopBarProps) {
@@ -37,6 +39,8 @@ export function TopBar(props: TopBarProps) {
         sessionStatus={props.sessionStatus}
         onSessionSelect={props.onSessionSelect}
         onRefreshSessions={props.onRefreshSessions}
+        onDeleteSession={props.onDeleteSession}
+        onRenameSession={props.onRenameSession}
       />
       <Show when={props.currentSessionId}>
         <button

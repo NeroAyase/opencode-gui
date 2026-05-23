@@ -270,6 +270,15 @@ export const HostMessageSchema = z.discriminatedUnion("type", [
     type: z.literal("session-reverted"),
     sessionID: z.string(),
   }),
+  z.object({
+    type: z.literal("session-deleted"),
+    sessionID: z.string(),
+  }),
+  z.object({
+    type: z.literal("session-renamed"),
+    sessionID: z.string(),
+    title: z.string(),
+  }),
 ]);
 export type HostMessage = z.infer<typeof HostMessageSchema>;
 

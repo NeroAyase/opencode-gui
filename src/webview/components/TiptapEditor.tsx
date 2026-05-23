@@ -30,6 +30,7 @@ export interface TiptapEditorProps {
   disabled?: boolean;
   searchFiles: (query: string) => Promise<string[]>;
   onFileMentionClick?: (filePath: string) => void;
+  onImagePaste?: (dataUrl: string, filename: string) => void;
   commands?: CommandItem[];
   onCommandSelect?: (command: CommandItem) => void;
   ref?: (methods: TiptapEditorMethods) => void;
@@ -104,6 +105,30 @@ export function TiptapEditor(props: TiptapEditorProps) {
         role: "textbox",
         "aria-label": "Message input",
         "aria-multiline": "true",
+      },
+      handlePaste: (view, event, slice) => {
+        const items = event.clipboardData?.items;
+        if (!items) return false;
+
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+          if (item.type.startsWith("image/")) {
+            event.preventDefault();
+            const file = item.getAsFile();
+            if (!file) continue;
+
+            const reader = new FileReader();
+            reader.onload = () => {
+              const dataUrl = reader.result as string;
+              const ext = item.type.split("/")[1] || "png";
+              const filename = `pasted-image-${Date.now()}.${ext}`;
+              props.onImagePaste?.(dataUrl, filename);
+            };
+            reader.readAsDataURL(file);
+            return true;
+          }
+        }
+        return false;
       },
       handleKeyDown: (view, event) => {
         // Let Tiptap handle suggestion navigation first

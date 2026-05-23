@@ -1,6 +1,7 @@
 import { createSignal, createMemo, Show, onMount, onCleanup, createEffect, For } from "solid-js";
 import { InputBar } from "./components/InputBar";
 import { QuestionDock } from "./components/QuestionDock";
+import { TodoDock } from "./components/TodoDock";
 import type { TiptapEditorMethods } from "./components/TiptapEditor";
 import type { CommandItem } from "./components/CommandPalette";
 import { MessageList } from "./components/MessageList";
@@ -42,6 +43,13 @@ interface SelectionAttachment {
   startLine?: number;
   endLine?: number;
 }
+
+interface ImageAttachment {
+  id: string;
+  dataUrl: string; // base64 data URL
+  filename: string;
+  mimeType: string; // e.g. "image/png"
+}
 import { vscode } from "./utils/vscode";
 import { Id } from "./utils/id";
 import { logger } from "./utils/logger";
@@ -67,6 +75,9 @@ function App() {
   const [sessionAgents, setSessionAgents] = createSignal<Map<string, string>>(new Map());
   const [selectionAttachmentsBySession, setSelectionAttachmentsBySession] = createSignal<
     Map<string, SelectionAttachment[]>
+  >(new Map());
+  const [imageAttachmentsBySession, setImageAttachmentsBySession] = createSignal<
+    Map<string, ImageAttachment[]>
   >(new Map());
   const [selectedModel, setSelectedModel] = createSignal<ModelSelection | null>(null);
   
@@ -218,6 +229,7 @@ function App() {
   const sessions = sync.sessions;
   const pendingPermissions = sync.aggregatedPermissions;
   const questions = sync.questions;
+  const todos = sync.todos;
   const contextInfo = sync.contextInfo;
   const fileChanges = sync.fileChanges;
   const isThinking = sync.isThinking;
@@ -240,6 +252,25 @@ function App() {
     value: SelectionAttachment[] | ((prev: SelectionAttachment[]) => SelectionAttachment[])
   ) => {
     setSelectionAttachmentsForKey(sessionKey(), value);
+  };
+
+  const imageAttachments = () => imageAttachmentsBySession().get(sessionKey()) || [];
+
+  const handleImagePaste = (dataUrl: string, filename: string) => {
+    const key = sessionKey();
+    const mimeType = dataUrl.match(/^data:(image\/\w+);/)?.[1] || "image/png";
+    const attachment: ImageAttachment = {
+      id: `img-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      dataUrl,
+      filename,
+      mimeType,
+    };
+    setImageAttachmentsBySession((prev) => {
+      const next = new Map(prev);
+      const current = next.get(key) || [];
+      next.set(key, [...current, attachment]);
+      return next;
+    });
   };
 
   const getFilename = (filePath: string) => {
@@ -311,13 +342,38 @@ function App() {
     });
   };
 
-  const attachmentChips = createMemo(() =>
-    selectionAttachments().map((attachment) => ({
+  const buildImageParts = (images: ImageAttachment[]): FilePartInput[] => {
+    return images.map((img) => ({
+      type: "file" as const,
+      mime: img.mimeType,
+      url: img.dataUrl,
+      filename: img.filename,
+      source: {
+        type: "file" as const,
+        path: "",
+        text: {
+          value: "",
+          start: 0,
+          end: 0,
+        },
+      },
+    }));
+  };
+
+  const attachmentChips = createMemo(() => {
+    const selectionChips = selectionAttachments().map((attachment) => ({
       id: attachment.id,
       label: formatSelectionLabel(attachment),
       title: attachment.filePath,
-    }))
-  );
+    }));
+    const imageChips = imageAttachments().map((img) => ({
+      id: img.id,
+      label: img.filename,
+      title: img.filename,
+      imageUrl: img.dataUrl,
+    }));
+    return [...selectionChips, ...imageChips];
+  });
 
   const hasMessages = createMemo(() =>
     messages().some((m) => m.type === "user" || m.type === "assistant")
@@ -483,6 +539,26 @@ function App() {
         void sync.bootstrap();
         return;
       }
+
+      if (parsed.type === "session-deleted") {
+        const deletedId = parsed.sessionID;
+        const currentId = sync.currentSessionId();
+        if (currentId === deletedId) {
+          const remaining = sync.sessions().filter(s => s.id !== deletedId);
+          if (remaining.length > 0) {
+            sync.setCurrentSessionId(remaining[0].id);
+          } else {
+            sync.setCurrentSessionId(null);
+          }
+        }
+        void sync.bootstrap();
+        return;
+      }
+
+      if (parsed.type === "session-renamed") {
+        void sync.bootstrap();
+        return;
+      }
     };
 
     window.addEventListener("message", handleHostMessage);
@@ -601,6 +677,9 @@ function App() {
     }
     
     const extraParts = buildSelectionParts(attachments);
+    const currentImages = imageAttachments();
+    const imageParts = buildImageParts(currentImages);
+    const allExtraParts = [...extraParts, ...imageParts];
 
     // Generate sortable client-side messageID for idempotent sends
     const messageID = Id.ascending("message");
@@ -642,7 +721,7 @@ function App() {
     logger.info("Sending prompt", { sessionId, messageID, textLen: text.length });
 
     try {
-      const result = await sendPrompt(sessionId, text, agent, extraParts, messageID, selectedModel());
+      const result = await sendPrompt(sessionId, text, agent, allExtraParts, messageID, selectedModel());
       
       // Log the full result for debugging
       const responseStatus = getResponseStatus(result);
@@ -674,6 +753,13 @@ function App() {
       
       if (attachments.length > 0) {
         setSelectionAttachmentsForKey(attachmentsKey, []);
+      }
+      if (currentImages.length > 0) {
+        setImageAttachmentsBySession((prev) => {
+          const next = new Map(prev);
+          next.delete(attachmentsKey);
+          return next;
+        });
       }
     } catch (err) {
       logger.error("sendPrompt exception", { error: String(err), stack: (err as Error).stack });
@@ -811,6 +897,17 @@ function App() {
 
   const handleRemoveAttachment = (id: string) => {
     setSelectionAttachments((prev) => prev.filter((item) => item.id !== id));
+    // Also check image attachments
+    const key = sessionKey();
+    setImageAttachmentsBySession((prev) => {
+      const current = prev.get(key);
+      if (!current) return prev;
+      const filtered = current.filter((img) => img.id !== id);
+      if (filtered.length === current.length) return prev;
+      const next = new Map(prev);
+      next.set(key, filtered);
+      return next;
+    });
   };
 
   const handleSessionSelect = async (sessionId: string) => {
@@ -1011,6 +1108,14 @@ function App() {
     await sync.bootstrap();
   };
 
+  const handleDeleteSession = (sessionId: string) => {
+    vscode.postMessage({ type: "session-delete", sessionID: sessionId });
+  };
+
+  const handleRenameSession = (sessionId: string, title: string) => {
+    vscode.postMessage({ type: "session-rename", sessionID: sessionId, title });
+  };
+
   return (
     <div class={`app ${hasMessages() ? "app--has-messages" : ""}`}>
       <Show when={hostError()}>
@@ -1028,6 +1133,8 @@ function App() {
         onSessionSelect={handleSessionSelect}
         onNewSession={handleNewSession}
         onRefreshSessions={refreshSessions}
+        onDeleteSession={handleDeleteSession}
+        onRenameSession={handleRenameSession}
       />
 
       <MessageList
@@ -1051,6 +1158,10 @@ function App() {
           <FileChangesSummary fileChanges={fileChanges()} />
           <ContextIndicator contextInfo={contextInfo()} />
         </div>
+      </Show>
+
+      <Show when={todos().length > 0}>
+        <TodoDock todos={todos()} />
       </Show>
 
       <Show when={standalonePermissions().length > 0}>
@@ -1089,6 +1200,7 @@ function App() {
           attachments={attachmentChips()}
           onRemoveAttachment={handleRemoveAttachment}
           onFileMentionClick={openFileFromMention}
+          onImagePaste={handleImagePaste}
           commands={commands()}
           onCommandSelect={handleCommandSelect}
           editorRef={handleEditorMethodsReady}

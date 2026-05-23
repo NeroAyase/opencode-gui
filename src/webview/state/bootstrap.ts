@@ -19,7 +19,7 @@ import type {
   FileChangesInfo,
   QuestionRequest,
 } from "../types";
-import type { SyncState, SessionStatus } from "./types";
+import type { SyncState, SessionStatus, Todo } from "./types";
 import { DEFAULT_CONTEXT_LIMIT } from "./types";
 import { extractTextFromParts } from "./utils";
 import { logger } from "../utils/logger";
@@ -38,6 +38,7 @@ export interface BootstrapContext {
     messages: (opts: { sessionID: string }) => Promise<{ data?: MessageWithParts[] }>;
     get: (opts: { sessionID: string }) => Promise<{ data?: SDKSession }>;
     status?: (opts?: { directory?: string }) => Promise<{ data?: { [key: string]: any } }>;
+    todo: (opts: { sessionID: string }) => Promise<{ data?: Array<{ content: string; status: string; priority: string }> }>;
   };
     permission: {
       list: (opts?: { directory?: string }) => Promise<{ data?: any[] }>;
@@ -57,6 +58,7 @@ export interface BootstrapResult {
   partMap: { [messageID: string]: MessagePart[] };
   permissionMap: { [sessionID: string]: Permission[] };
   questionMap: { [sessionID: string]: QuestionRequest[] };
+  todoMap: { [sessionID: string]: Todo[] };
   sessionStatusMap: { [sessionID: string]: SessionStatus };
   contextInfo: ContextInfo | null;
   fileChanges: FileChangesInfo | null;
@@ -156,6 +158,7 @@ export async function fetchBootstrapData(ctx: BootstrapContext): Promise<Bootstr
   const partMap: { [messageID: string]: MessagePart[] } = {};
   const permissionMap: { [sessionID: string]: Permission[] } = {};
   const questionMap: { [sessionID: string]: QuestionRequest[] } = {};
+  const todoMap: { [sessionID: string]: Todo[] } = {};
   const sessionStatusMap: { [sessionID: string]: SessionStatus } = sessionStatusRes?.data ?? {};
 
   // Fetch pending permissions
@@ -283,6 +286,21 @@ export async function fetchBootstrapData(ctx: BootstrapContext): Promise<Bootstr
           };
         }
       }
+
+      // Fetch todos for the current session
+      try {
+        const todoRes = await client.session.todo({ sessionID: sessionId });
+        const rawTodos = todoRes?.data ?? [];
+        if (rawTodos.length > 0) {
+          todoMap[sessionId] = rawTodos.map((t) => ({
+            content: t.content,
+            status: t.status,
+            priority: t.priority,
+          }));
+        }
+      } catch (err) {
+        logger.error("Failed to load todos during bootstrap:", { error: err });
+      }
     } catch (err) {
       logger.error("Failed to load session messages:", { error: err });
     }
@@ -294,7 +312,7 @@ export async function fetchBootstrapData(ctx: BootstrapContext): Promise<Bootstr
     messageCount: messageList.length,
     sessionId 
   });
-  return { agents, sessions, messageList, partMap, permissionMap, questionMap, sessionStatusMap, contextInfo, fileChanges };
+  return { agents, sessions, messageList, partMap, permissionMap, questionMap, todoMap, sessionStatusMap, contextInfo, fileChanges };
 }
 
 export function commitBootstrapData(
@@ -331,6 +349,7 @@ export function commitBootstrapData(
     }
     setStore("permission", reconcile(data.permissionMap));
     setStore("question", reconcile(data.questionMap));
+    setStore("todo", reconcile(data.todoMap));
     setStore("sessionStatus", reconcile(data.sessionStatusMap));
     setStore("contextInfo", data.contextInfo);
     setStore("fileChanges", data.fileChanges);
