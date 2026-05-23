@@ -422,4 +422,39 @@ describe("Frontend Bootstrap", () => {
     expect(result.messageList[0].time).toEqual({ created: 20, completed: 30 });
     expect(result.messageList[1].time).toEqual({ created: 10 });
   });
+
+  it("should handle client without optional APIs", async () => {
+    const harness = new GatekeeperHarness()
+      .add("appApi", () => new MockAppApi())
+      .add("sessionApi", () => new MockSessionApi());
+
+    harness.raiseAllGates();
+
+    // Deliberately omit permission, question, session.status, and session.todo
+    const ctx: BootstrapContext = {
+      client: {
+        app: harness.appApi.intercept,
+        session: harness.sessionApi.intercept,
+      },
+      sessionId: null,
+      workspaceRoot: "/test",
+    };
+
+    const resultPromise = fetchBootstrapData(ctx);
+
+    const agentsCall = await harness.appApi.waitForCall("agents");
+    await agentsCall.fulfill({ data: [] });
+
+    const sessionListCall = await harness.sessionApi.waitForCall("list");
+    await sessionListCall.fulfill({ data: [] });
+
+    const result = await resultPromise;
+
+    expect(result.agents).toHaveLength(0);
+    expect(result.sessions).toHaveLength(0);
+    expect(result.permissionMap).toEqual({});
+    expect(result.questionMap).toEqual({});
+    expect(result.todoMap).toEqual({});
+    expect(result.sessionStatusMap).toEqual({});
+  });
 });
