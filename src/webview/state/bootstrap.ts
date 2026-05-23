@@ -38,12 +38,12 @@ export interface BootstrapContext {
     messages: (opts: { sessionID: string }) => Promise<{ data?: MessageWithParts[] }>;
     get: (opts: { sessionID: string }) => Promise<{ data?: SDKSession }>;
     status?: (opts?: { directory?: string }) => Promise<{ data?: { [key: string]: any } }>;
-    todo: (opts: { sessionID: string }) => Promise<{ data?: Array<{ content: string; status: string; priority: string }> }>;
+    todo?: (opts: { sessionID: string }) => Promise<{ data?: Array<{ content: string; status: string; priority: string }> }>;
   };
-    permission: {
+    permission?: {
       list: (opts?: { directory?: string }) => Promise<{ data?: any[] }>;
     };
-    question: {
+    question?: {
       list: (opts?: { directory?: string }) => Promise<{ data?: any[] }>;
     };
   };
@@ -162,41 +162,45 @@ export async function fetchBootstrapData(ctx: BootstrapContext): Promise<Bootstr
   const sessionStatusMap: { [sessionID: string]: SessionStatus } = sessionStatusRes?.data ?? {};
 
   // Fetch pending permissions
-  try {
-    const permissionsRes = await client.permission.list(
-      workspaceRoot ? { directory: workspaceRoot } : undefined
-    );
-    const permissions = permissionsRes?.data ?? [];
-    
-    // Group permissions by sessionID
-    for (const sdkPerm of permissions) {
-      const perm = toPermission(sdkPerm as SDKPermission);
-      if (!permissionMap[perm.sessionID]) {
-        permissionMap[perm.sessionID] = [];
+  if (client.permission?.list) {
+    try {
+      const permissionsRes = await client.permission.list(
+        workspaceRoot ? { directory: workspaceRoot } : undefined
+      );
+      const permissions = permissionsRes?.data ?? [];
+      
+      // Group permissions by sessionID
+      for (const sdkPerm of permissions) {
+        const perm = toPermission(sdkPerm as SDKPermission);
+        if (!permissionMap[perm.sessionID]) {
+          permissionMap[perm.sessionID] = [];
+        }
+        permissionMap[perm.sessionID].push(perm);
       }
-      permissionMap[perm.sessionID].push(perm);
+    } catch (err) {
+      logger.error("Failed to load permissions during bootstrap:", { error: err });
     }
-  } catch (err) {
-    logger.error("Failed to load permissions during bootstrap:", { error: err });
   }
 
   // Fetch pending questions
-  try {
-    const questionsRes = await client.question.list(
-      workspaceRoot ? { directory: workspaceRoot } : undefined
-    );
-    const questions = questionsRes?.data ?? [];
+  if (client.question?.list) {
+    try {
+      const questionsRes = await client.question.list(
+        workspaceRoot ? { directory: workspaceRoot } : undefined
+      );
+      const questions = questionsRes?.data ?? [];
 
-    // Group questions by sessionID
-    for (const sdkQ of questions) {
-      const question = toQuestion(sdkQ as SDKQuestion);
-      if (!questionMap[question.sessionID]) {
-        questionMap[question.sessionID] = [];
+      // Group questions by sessionID
+      for (const sdkQ of questions) {
+        const question = toQuestion(sdkQ as SDKQuestion);
+        if (!questionMap[question.sessionID]) {
+          questionMap[question.sessionID] = [];
+        }
+        questionMap[question.sessionID].push(question);
       }
-      questionMap[question.sessionID].push(question);
+    } catch (err) {
+      logger.error("Failed to load questions during bootstrap:", { error: err });
     }
-  } catch (err) {
-    logger.error("Failed to load questions during bootstrap:", { error: err });
   }
 
   if (sessionId) {
@@ -288,18 +292,20 @@ export async function fetchBootstrapData(ctx: BootstrapContext): Promise<Bootstr
       }
 
       // Fetch todos for the current session
-      try {
-        const todoRes = await client.session.todo({ sessionID: sessionId });
-        const rawTodos = todoRes?.data ?? [];
-        if (rawTodos.length > 0) {
-          todoMap[sessionId] = rawTodos.map((t) => ({
-            content: t.content,
-            status: t.status,
-            priority: t.priority,
-          }));
+      if (client.session.todo) {
+        try {
+          const todoRes = await client.session.todo({ sessionID: sessionId });
+          const rawTodos = todoRes?.data ?? [];
+          if (rawTodos.length > 0) {
+            todoMap[sessionId] = rawTodos.map((t) => ({
+              content: t.content,
+              status: t.status,
+              priority: t.priority,
+            }));
+          }
+        } catch (err) {
+          logger.error("Failed to load todos during bootstrap:", { error: err });
         }
-      } catch (err) {
-        logger.error("Failed to load todos during bootstrap:", { error: err });
       }
     } catch (err) {
       logger.error("Failed to load session messages:", { error: err });

@@ -16,9 +16,14 @@ type SessionApi = {
   list(opts?: { directory?: string }): Promise<{ data?: SDKSession[] }>;
   messages(opts: { sessionID: string }): Promise<{ data?: any[] }>;
   get(opts: { sessionID: string }): Promise<{ data?: SDKSession }>;
+  todo(opts: { sessionID: string }): Promise<{ data?: any[] }>;
 };
 
 type PermissionApi = {
+  list(opts?: { directory?: string }): Promise<{ data?: any[] }>;
+};
+
+type QuestionApi = {
   list(opts?: { directory?: string }): Promise<{ data?: any[] }>;
 };
 
@@ -68,9 +73,19 @@ class MockSessionApi implements SessionApi {
       } as SDKSession,
     };
   }
+
+  async todo(_opts: { sessionID: string }): Promise<{ data?: any[] }> {
+    return { data: [] };
+  }
 }
 
 class MockPermissionApi implements PermissionApi {
+  async list(_opts?: { directory?: string }): Promise<{ data?: any[] }> {
+    return { data: [] };
+  }
+}
+
+class MockQuestionApi implements QuestionApi {
   async list(_opts?: { directory?: string }): Promise<{ data?: any[] }> {
     return { data: [] };
   }
@@ -81,7 +96,8 @@ describe("Frontend Bootstrap", () => {
     const harness = new GatekeeperHarness()
       .add("appApi", () => new MockAppApi())
       .add("sessionApi", () => new MockSessionApi())
-      .add("permissionApi", () => new MockPermissionApi());
+      .add("permissionApi", () => new MockPermissionApi())
+      .add("questionApi", () => new MockQuestionApi());
 
     harness.lowerAllGates();
 
@@ -90,6 +106,7 @@ describe("Frontend Bootstrap", () => {
         app: harness.appApi.call,
         session: harness.sessionApi.call,
         permission: harness.permissionApi.call,
+        question: harness.questionApi.call,
       },
       sessionId: null,
       workspaceRoot: "/test",
@@ -107,7 +124,8 @@ describe("Frontend Bootstrap", () => {
     const harness = new GatekeeperHarness()
       .add("appApi", () => new MockAppApi())
       .add("sessionApi", () => new MockSessionApi())
-      .add("permissionApi", () => new MockPermissionApi());
+      .add("permissionApi", () => new MockPermissionApi())
+      .add("questionApi", () => new MockQuestionApi());
 
     harness.raiseAllGates();
 
@@ -116,6 +134,7 @@ describe("Frontend Bootstrap", () => {
         app: harness.appApi.intercept,
         session: harness.sessionApi.intercept,
         permission: harness.permissionApi.intercept,
+        question: harness.questionApi.intercept,
       },
       sessionId: null,
       workspaceRoot: "/test",
@@ -142,6 +161,9 @@ describe("Frontend Bootstrap", () => {
     const permissionListCall = await harness.permissionApi.waitForCall("list");
     await permissionListCall.fulfill({ data: [] });
 
+    const questionListCall = await harness.questionApi.waitForCall("list");
+    await questionListCall.fulfill({ data: [] });
+
     const result = await resultPromise;
 
     expect(result.agents).toHaveLength(1);
@@ -153,7 +175,8 @@ describe("Frontend Bootstrap", () => {
     const harness = new GatekeeperHarness()
       .add("appApi", () => new MockAppApi())
       .add("sessionApi", () => new MockSessionApi())
-      .add("permissionApi", () => new MockPermissionApi());
+      .add("permissionApi", () => new MockPermissionApi())
+      .add("questionApi", () => new MockQuestionApi());
 
     harness.raiseAllGates();
 
@@ -162,6 +185,7 @@ describe("Frontend Bootstrap", () => {
         app: harness.appApi.intercept,
         session: harness.sessionApi.intercept,
         permission: harness.permissionApi.intercept,
+        question: harness.questionApi.intercept,
       },
       sessionId: null,
       workspaceRoot: "/test",
@@ -202,6 +226,9 @@ describe("Frontend Bootstrap", () => {
     const permissionListCall = await harness.permissionApi.waitForCall("list");
     await permissionListCall.fulfill({ data: [] });
 
+    const questionListCall = await harness.questionApi.waitForCall("list");
+    await questionListCall.fulfill({ data: [] });
+
     const result = await resultPromise;
 
     expect(result.agents).toHaveLength(1);
@@ -212,7 +239,8 @@ describe("Frontend Bootstrap", () => {
     const harness = new GatekeeperHarness()
       .add("appApi", () => new MockAppApi())
       .add("sessionApi", () => new MockSessionApi())
-      .add("permissionApi", () => new MockPermissionApi());
+      .add("permissionApi", () => new MockPermissionApi())
+      .add("questionApi", () => new MockQuestionApi());
 
     harness.raiseAllGates();
 
@@ -221,6 +249,7 @@ describe("Frontend Bootstrap", () => {
         app: harness.appApi.intercept,
         session: harness.sessionApi.intercept,
         permission: harness.permissionApi.intercept,
+        question: harness.questionApi.intercept,
       },
       sessionId: null,
       workspaceRoot: "/test",
@@ -258,6 +287,9 @@ describe("Frontend Bootstrap", () => {
     const permissionListCall = await harness.permissionApi.waitForCall("list");
     await permissionListCall.fulfill({ data: [] });
 
+    const questionListCall = await harness.questionApi.waitForCall("list");
+    await questionListCall.fulfill({ data: [] });
+
     const result = await resultPromise;
 
     expect(result.sessions).toHaveLength(1);
@@ -268,7 +300,8 @@ describe("Frontend Bootstrap", () => {
     const harness = new GatekeeperHarness()
       .add("appApi", () => new MockAppApi())
       .add("sessionApi", () => new MockSessionApi())
-      .add("permissionApi", () => new MockPermissionApi());
+      .add("permissionApi", () => new MockPermissionApi())
+      .add("questionApi", () => new MockQuestionApi());
 
     harness.raiseAllGates();
 
@@ -277,6 +310,7 @@ describe("Frontend Bootstrap", () => {
         app: harness.appApi.intercept,
         session: harness.sessionApi.intercept,
         permission: harness.permissionApi.intercept,
+        question: harness.questionApi.intercept,
       },
       sessionId: null,
       workspaceRoot: "/test",
@@ -293,6 +327,9 @@ describe("Frontend Bootstrap", () => {
     const permissionListCall = await harness.permissionApi.waitForCall("list");
     await permissionListCall.reject(new Error("Network error"));
 
+    const questionListCall = await harness.questionApi.waitForCall("list");
+    await questionListCall.fulfill({ data: [] });
+
     const result = await resultPromise;
 
     expect(result.agents).toHaveLength(0);
@@ -304,7 +341,8 @@ describe("Frontend Bootstrap", () => {
     const harness = new GatekeeperHarness()
       .add("appApi", () => new MockAppApi())
       .add("sessionApi", () => new MockSessionApi())
-      .add("permissionApi", () => new MockPermissionApi());
+      .add("permissionApi", () => new MockPermissionApi())
+      .add("questionApi", () => new MockQuestionApi());
 
     harness.raiseAllGates();
 
@@ -313,6 +351,7 @@ describe("Frontend Bootstrap", () => {
         app: harness.appApi.intercept,
         session: harness.sessionApi.intercept,
         permission: harness.permissionApi.intercept,
+        question: harness.questionApi.intercept,
       },
       sessionId: "session-1",
       workspaceRoot: "/test",
@@ -328,6 +367,9 @@ describe("Frontend Bootstrap", () => {
 
     const permissionListCall = await harness.permissionApi.waitForCall("list");
     await permissionListCall.fulfill({ data: [] });
+
+    const questionListCall = await harness.questionApi.waitForCall("list");
+    await questionListCall.fulfill({ data: [] });
 
     const messagesCall = await harness.sessionApi.waitForCall("messages");
     await messagesCall.fulfill({
@@ -368,6 +410,9 @@ describe("Frontend Bootstrap", () => {
         time: { created: Date.now(), updated: Date.now() },
       },
     });
+
+    const todoCall = await harness.sessionApi.waitForCall("todo");
+    await todoCall.fulfill({ data: [] });
 
     const result = await resultPromise;
 

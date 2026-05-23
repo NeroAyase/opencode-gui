@@ -24,9 +24,9 @@ A new window called "Extension Development Host" will open.
 
 In that new window:
 1. Look at the **left sidebar** (Activity Bar)
-2. Find the **OpenCode icon** (looks like a square/box)
+2. Find the **CodeFree-O icon** (looks like a square/box)
 3. **Click the icon**
-4. The sidebar opens with "Hello from Opencode" 🎉
+4. The sidebar opens with the CodeFree-O chat interface 🎉
 
 ---
 
@@ -36,13 +36,13 @@ If the script doesn't work or you prefer manual control:
 
 ### 1. Build Everything
 ```bash
-npm run build
+pnpm build
 ```
 
 ### 2. Start Watch Mode
 Open a terminal and run:
 ```bash
-npm run watch
+pnpm watch
 ```
 **Keep this terminal open!** It will automatically rebuild when you make changes.
 
@@ -53,7 +53,7 @@ npm run watch
 
 ### 4. Find Your Extension
 In the Extension Development Host window:
-- Look for OpenCode icon in the Activity Bar (left side)
+- Look for CodeFree-O icon in the Activity Bar (left side)
 - Click it to open the sidebar panel
 
 ---
@@ -61,12 +61,12 @@ In the Extension Development Host window:
 ## 🔍 Troubleshooting
 
 ### I pressed F5 but nothing happened
-1. Check if the terminal shows "Starting incremental compilation..." - if not, `npm run watch` isn't running
+1. Check if the terminal shows "Starting incremental compilation..." - if not, `pnpm watch` isn't running
 2. Try the manual steps above instead
 
-### The Extension Development Host opened but I don't see the OpenCode icon
+### The Extension Development Host opened but I don't see the CodeFree-O icon
 1. Check the Debug Console: View > Debug Console
-2. Look for "OpenCode extension is now active!" message
+2. Look for "CodeFree-O extension is now active!" message
 3. If not there, check that `dist/extension.js` exists
 4. Try: Developer: Reload Window (in Command Palette)
 
@@ -74,7 +74,7 @@ In the Extension Development Host window:
 1. Open Developer Tools: Command Palette > "Developer: Toggle Developer Tools"
 2. Check Console for errors
 3. Verify `out/main.js` and `out/main.css` exist
-4. Try rebuilding: `npm run clean && npm run build`
+4. Try rebuilding: `pnpm build`
 
 ### Hot reload isn't working
 **For extension code changes:**
@@ -82,7 +82,7 @@ In the Extension Development Host window:
 - In Extension Development Host, press `Cmd+R` (Mac) or `Ctrl+R` (Windows/Linux)
 - Or: Command Palette > "Developer: Reload Window"
 
-**For webview (React) changes:**
+**For webview (SolidJS) changes:**
 - Should reload automatically
 - If not, check that watch mode is running
 - Check terminal for Vite errors
@@ -98,14 +98,14 @@ When everything works:
    - Debug Console shows compilation messages
 
 2. **Extension Development Host window**:
-   - OpenCode icon in Activity Bar (left side)
+   - CodeFree-O icon in Activity Bar (left side)
    - Click icon → Sidebar opens
-   - Shows "Hello from Opencode"
+   - Shows the CodeFree-O chat interface
 
 3. **Debug Console** (in Extension Development Host):
    ```
-   OpenCode extension is now active!
-   OpenCode webview provider registered
+   CodeFree-O extension is now active!
+   CodeFree-O webview provider registered
    ```
 
 ---
@@ -114,7 +114,7 @@ When everything works:
 
 - **First time?** Run `./start-dev.sh` - it does everything for you
 - **Developing?** Keep watch mode running, just press `Cmd+R` in Extension Development Host when you change extension code
-- **React changes?** Just save - they hot reload automatically!
+- **SolidJS changes?** Just save - they hot reload automatically!
 - **Stuck?** See TROUBLESHOOTING.md for detailed help
 
 ---
@@ -123,7 +123,7 @@ When everything works:
 
 - `src/extension.ts` - Extension entry point
 - `src/OpenCodeViewProvider.ts` - Webview provider logic  
-- `src/webview/App.tsx` - React UI
+- `src/webview/App.tsx` - SolidJS UI
 - `src/webview/App.css` - Styles
 
 After editing extension code, press `Cmd+R` in Extension Development Host.
