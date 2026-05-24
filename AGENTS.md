@@ -14,7 +14,7 @@
 
 VSCode extension with SolidJS webview. Two build targets:
 
-- **Extension** (`src/extension.ts`, `OpenCodeService.ts`, `OpenCodeViewProvider.ts`) - VSCode extension host
+- **Extension** (`src/extension.ts`, `CodeFreeOService.ts`, `CodeFreeOViewProvider.ts`) - VSCode extension host
 - **Webview** (`src/webview/`) - SolidJS chat UI communicating via `@srdcloud/codefree-o-sdk`
 
 ## Code Style

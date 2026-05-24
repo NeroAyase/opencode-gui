@@ -9,7 +9,7 @@
 - ✅ Add webview debug logs for connection status and event throughput.
 
 **Files:**
-- `src/OpenCodeViewProvider.ts`
+- `src/CodeFreeOViewProvider.ts`
 - `src/shared/messages.ts` (added `sseStatus` message type)
 - `src/webview/utils/proxyEventSource.ts` (added `onStatus` callback)
 
@@ -25,13 +25,13 @@
   - Track `Last-Event-ID` and send it on reconnect.
   - Exponential backoff with cap; honor server `retry:` values.
   - Clean cancellation via AbortController.
-- ✅ Replace manual SSE proxy in `OpenCodeViewProvider` with `SseClient`.
+- ✅ Replace manual SSE proxy in `CodeFreeOViewProvider` with `SseClient`.
 - ✅ Forward parsed events to webview via `postMessage` (no SSE in webview).
 
 **Files:**
 - `src/transport/SseClient.ts` (new)
 - `src/transport/__tests__/SseClient.test.ts` (12 tests)
-- `src/OpenCodeViewProvider.ts`
+- `src/CodeFreeOViewProvider.ts`
 
 **Acceptance:**
 - ✅ SSE reconnects automatically after drop.
@@ -57,7 +57,7 @@
 - `src/webview/state/useSyncStore.ts` (new)
 - `src/webview/state/index.ts` (new)
 - `src/webview/state/__tests__/syncStore.test.ts` (27 tests)
-- `src/webview/hooks/useOpenCode.ts` (added SSEStatus type and onStatus param)
+- `src/webview/hooks/useCodeFreeO.ts` (added SSEStatus type and onStatus param)
 
 **Acceptance:**
 - ✅ UI fully recovers after reconnect without missing messages.
@@ -81,7 +81,7 @@ its own state management. Migration can be done incrementally.
 
 **Files:**
 - `src/webview/App.tsx` (added `InFlightMessage`, updated handlers, error handling for SDK results)
-- `src/webview/hooks/useOpenCode.ts` (added `messageID` param to `sendPrompt`)
+- `src/webview/hooks/useCodeFreeO.ts` (added `messageID` param to `sendPrompt`)
 - `src/webview/utils/messageUtils.ts` (fixed text extraction from parts in SSE updates)
 - `tests/e2e/outbox.spec.ts` (new e2e tests for outbox functionality)
 
@@ -105,7 +105,7 @@ its own state management. Migration can be done incrementally.
 
 **Files:**
 - `src/webview/App.tsx` (updated buildSelectionParts with source metadata)
-- `src/webview/hooks/useOpenCode.ts` (exported FilePartInput and FilePartSource types)
+- `src/webview/hooks/useCodeFreeO.ts` (exported FilePartInput and FilePartSource types)
 - `tests/e2e/attachments.spec.ts` (new - 7 tests)
 
 **Acceptance:**

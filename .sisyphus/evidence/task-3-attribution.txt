@@ -1,0 +1,13 @@
+=== Task 3: Attribution Preservation Verification ===
+Date: 2026-05-24
+
+Pattern: anomalyco/opencode in *.md files
+
+Matches found: 17 (in 3 files)
+- AGENTS.md: 1 match (TUI reference implementation link)
+- docs/engineering/spec-sisyphus-workflow.md: 1 match (attribution preservation rule)
+- docs/OPENCODE_TUI_SYNC_SYSTEM.md: 15 matches (source code links to upstream TUI)
+
+All matches are upstream OpenCode TUI attribution references — correctly preserved per task rules.
+
+VERIFICATION: PASSED

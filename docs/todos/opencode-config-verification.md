@@ -9,9 +9,9 @@ Verify that the VSCode extension is correctly using the workspace `opencode.json
 
 1. **Extension Activation** (`src/extension.ts`):
    - Gets workspace root from `vscode.workspace.workspaceFolders?.[0]?.uri.fsPath`
-   - Passes it to `openCodeService.initialize(workspaceRoot)`
+   - Passes it to `codefreeOService.initialize(workspaceRoot)`
 
-2. **Service Initialization** (`src/OpenCodeService.ts`):
+2. **Service Initialization** (`src/CodeFreeOService.ts`):
    - Calls `loadWorkspaceConfig(workspaceRoot)` to attempt loading workspace config
    - Passes config to `createOpencode({ config })` from `@opencode-ai/sdk`
    - Changes working directory temporarily to workspace root for spawn context

@@ -52,7 +52,7 @@ export type ToolState =
 
 ### Current Implementation
 
-The current code in `OpenCodeViewProvider.ts` only extracts `text` parts:
+The current code in `CodeFreeOViewProvider.ts` only extracts `text` parts:
 
 ```typescript
 private _extractResponseText(response: { parts: Array<{ type: string; text?: string }> }): string {
@@ -92,7 +92,7 @@ interface MessagePart {
 }
 ```
 
-### 2. Update OpenCodeViewProvider
+### 2. Update CodeFreeOViewProvider
 
 Change `_extractResponseText` to send all parts to the webview:
 
@@ -136,7 +136,7 @@ Tool calls should be styled as collapsible `<details>` blocks similar to thinkin
 - ✅ Identified that tool parts are being filtered out in display
 - ✅ Created implementation plan
 - ✅ Updated TypeScript interfaces for messages and parts in `App.tsx`
-- ✅ Modified `OpenCodeViewProvider.ts` to pass all parts to webview
+- ✅ Modified `CodeFreeOViewProvider.ts` to pass all parts to webview
 - ✅ Created UI components for rendering different part types:
   - `renderToolPart()`: Displays tool calls with status, input, output, and errors
   - `renderMessagePart()`: Router for different part types
@@ -154,7 +154,7 @@ Tool calls should be styled as collapsible `<details>` blocks similar to thinkin
    - Created `renderMessagePart()` to handle different part types
    - Updated message rendering to use parts when available
 
-2. `src/OpenCodeViewProvider.ts`:
+2. `src/CodeFreeOViewProvider.ts`:
    - Modified `_handleSendPrompt()` to include `parts` in response message
    - Kept `_extractResponseText()` for backward compatibility
 
@@ -199,6 +199,6 @@ This is by design - tool calls are considered operational telemetry and are comp
 ## Technical Notes
 
 - The SDK already provides proper typing for all part types
-- No changes needed to OpenCodeService.ts - it already returns the full parts array
-- Main work is in OpenCodeViewProvider.ts and App.tsx
+- No changes needed to CodeFreeOService.ts - it already returns the full parts array
+- Main work is in CodeFreeOViewProvider.ts and App.tsx
 - Should maintain backward compatibility with text-only messages

@@ -23,7 +23,7 @@ Apply style improvements inspired by Amp's extension to make the UI cleaner and 
 
 ### Section Heading
 - Need to check if there's a "Chat" heading in the VSCode view title or webview
-- The `OpenCodeViewProvider.viewType = 'opencode.chatView'` might show a title in VSCode
+- The `CodeFreeOViewProvider.viewType = 'opencode.chatView'` might show a title in VSCode
 
 ## Tailwind to CSS Conversion
 

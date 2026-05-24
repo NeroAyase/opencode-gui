@@ -65,7 +65,7 @@ App.tsx is 1,220 lines. The assessment's "over 1,000 lines" characterization is 
 
 | Extracted module | Lines | What it offloaded |
 |-----------------|-------|-------------------|
-| `hooks/useOpenCode.tsx` | 315 | SDK client, connection lifecycle, all API wrappers |
+| `hooks/useCodeFreeO.tsx` | 315 | SDK client, connection lifecycle, all API wrappers |
 | `hooks/useAutoAccept.ts` | 25 | Auto-accept toggle + localStorage persistence |
 | `state/sync.tsx` | ~400 | Server-owned state, SSE, session management |
 | `state/eventHandlers.ts` | ~200 | SSE event processing |
@@ -93,14 +93,14 @@ Extracting these five domains would reduce App.tsx to approximately 690 lines (o
 
 Commit `04a5261` updated both flagged files:
 
-- `HOW-TO-RUN.md`: No React references remain. SolidJS and CodeFree-O branding is used throughout. The only residual "OpenCode" mention is the source filename `OpenCodeViewProvider.ts`, which is a codebase naming decision (the file exists at that path), not a documentation error.
+- `HOW-TO-RUN.md`: No React references remain. SolidJS and CodeFree-O branding is used throughout.
 - `TODO.md`: Completed items are marked with `[x]`. New items have been added for remaining work (App.tsx refactoring, bundle optimization, E2E environment, image paste capability check).
 
 The assessment's recommendation to "update HOW-TO-RUN.md to reflect SolidJS, CodeFree-O naming" and "reconcile TODO.md against implemented features" has been fulfilled.
 
-**Remaining gap**: The source filename `OpenCodeViewProvider.ts` retains the "OpenCode" prefix. Renaming it to align with CodeFree-O branding would require updating all imports across the codebase. This is a cosmetic change with moderate churn.
+**Remaining gap**: The source filenames have been renamed to `CodeFreeOViewProvider.ts` and `CodeFreeOService.ts` to align with CodeFree-O branding.
 
-**Recommended action**: Consider renaming `OpenCodeViewProvider.ts` and `OpenCodeService.ts` in a dedicated cleanup commit. Low priority.
+**Recommended action**: Completed in dedicated cleanup commit.
 
 ### 5. Webview bundle size is large
 

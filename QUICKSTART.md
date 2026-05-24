@@ -31,7 +31,7 @@
 ## Development Loop
 
 ### For Extension Code Changes (TypeScript backend)
-1. Make changes to files in `src/` (e.g., `extension.ts`, `OpenCodeViewProvider.ts`)
+1. Make changes to files in `src/` (e.g., `extension.ts`, `CodeFreeOViewProvider.ts`)
 2. Save the file
 3. In the Extension Development Host window:
    - Press `Cmd+R` (Mac) or `Ctrl+R` (Windows/Linux)
@@ -46,7 +46,7 @@
 ## Debugging
 
 ### Extension Code
-- Set breakpoints in `src/extension.ts` or `src/OpenCodeViewProvider.ts`
+- Set breakpoints in `src/extension.ts` or `src/CodeFreeOViewProvider.ts`
 - Debug panel will show variables and call stack
 
 ### Webview Code

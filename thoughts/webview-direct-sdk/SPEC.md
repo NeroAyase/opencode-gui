@@ -15,9 +15,9 @@ Refactor the extension so the webview communicates directly with the OpenCode se
                                          ▼
 ┌─────────────────────────────────────┐
 │  Extension Host                      │
-│  ├─ OpenCodeViewProvider.ts         │ ◄── ~600 lines of message proxying
+│  ├─ CodeFreeOViewProvider.ts        │ ◄── ~600 lines of message proxying
 │  │   └─ switch/case for 12+ types   │
-│  └─ OpenCodeService.ts              │
+│  └─ CodeFreeOService.ts             │
 │      └─ SDK client ────────────────────┐
 └─────────────────────────────────────┘  │
                                          ▼
@@ -37,7 +37,7 @@ Refactor the extension so the webview communicates directly with the OpenCode se
 ```
 ┌─────────────────────────────────────┐
 │  Webview (SolidJS)                  │
-│  └─ useOpenCode hook                │
+│  └─ useCodeFreeO hook               │
 │     └─ SDK client (HTTP/SSE) ──────────┐
 └─────────────────────────────────────┘  │
                                          │
@@ -74,7 +74,7 @@ The SDK uses:
 
 The webview's Content-Security-Policy must allow connections to localhost.
 
-**Current CSP** (in OpenCodeViewProvider.ts):
+**Current CSP** (in CodeFreeOViewProvider.ts):
 ```html
 <meta http-equiv="Content-Security-Policy" 
       content="default-src 'none'; 
@@ -99,9 +99,9 @@ The webview's Content-Security-Policy must allow connections to localhost.
 3. Persist agent selection via `globalState`
 4. Handle any VSCode-specific APIs (open file, show notification, etc.)
 
-**Simplified OpenCodeViewProvider.ts:**
+**Simplified CodeFreeOViewProvider.ts:**
 ```typescript
-export class OpenCodeViewProvider implements vscode.WebviewViewProvider {
+export class CodeFreeOViewProvider implements vscode.WebviewViewProvider {
   private serverUrl?: string;
 
   constructor(
@@ -156,12 +156,12 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider {
 
 ### Phase 4: New Webview Hook
 
-**New `useOpenCode.ts`:**
+**New `useCodeFreeO.ts`:**
 ```typescript
 import { createSignal, onMount, onCleanup } from 'solid-js';
 import { createOpencodeClient, type OpencodeClient, type Event } from '@opencode-ai/sdk';
 
-export function useOpenCode() {
+export function useCodeFreeO() {
   const [client, setClient] = createSignal<OpencodeClient | null>(null);
   const [isReady, setIsReady] = createSignal(false);
 
@@ -239,7 +239,7 @@ export function useOpenCode() {
 
 ### Phase 5: Update App.tsx
 
-Replace `useVsCodeBridge` with `useOpenCode`:
+Replace `useVsCodeBridge` with `useCodeFreeO`:
 
 ```typescript
 function App() {
@@ -250,7 +250,7 @@ function App() {
     sendPrompt, 
     subscribeToEvents,
     // ... etc
-  } = useOpenCode();
+  } = useCodeFreeO();
 
   // Direct SDK calls instead of postMessage
   onMount(async () => {
@@ -510,12 +510,12 @@ jobs:
 
 | File | Change |
 |------|--------|
-| `src/OpenCodeViewProvider.ts` | Reduce from ~600 to ~80 lines |
-| `src/OpenCodeService.ts` | **Delete** - no longer needed |
+| `src/CodeFreeOViewProvider.ts` | Reduce from ~600 to ~80 lines |
+| `src/CodeFreeOService.ts` | **Delete** - no longer needed |
 | `src/extension.ts` | Simplify to just spawn server |
 | `src/webview/hooks/useVsCodeBridge.ts` | **Delete** - replaced |
-| `src/webview/hooks/useOpenCode.ts` | **New** - SDK wrapper |
-| `src/webview/App.tsx` | Use `useOpenCode` instead |
+| `src/webview/hooks/useCodeFreeO.ts` | **New** - SDK wrapper |
+| `src/webview/App.tsx` | Use `useCodeFreeO` instead |
 | `src/webview/types.ts` | Remove duplicated types, import from SDK |
 
 ## Types Cleanup
@@ -544,7 +544,7 @@ The extension host still handles:
 ## Migration Strategy
 
 1. **Phase 1-2**: Add CSP, verify SDK works in webview (non-breaking)
-2. **Phase 3**: Create `useOpenCode` hook alongside existing code
+2. **Phase 3**: Create `useCodeFreeO` hook alongside existing code
 3. **Phase 4**: Migrate App.tsx to use new hook
 4. **Phase 5**: Delete old proxy code
 5. **Phase 6**: E2E Playwright tests for webview
@@ -556,12 +556,12 @@ The extension host still handles:
 **Phase 5 completed** - Webview now uses SDK directly with fetch proxy for CORS bypass.
 
 **Files changed:**
-- `src/webview/hooks/useOpenCode.ts` - SDK client with proxyFetch, native EventSource for SSE
+- `src/webview/hooks/useCodeFreeO.ts` - SDK client with proxyFetch, native EventSource for SSE
 - `src/webview/utils/proxyFetch.ts` - Routes fetch through extension via postMessage (30s timeout, cleanup on unload)
 - `src/webview/utils/vscode.ts` - Shared acquireVsCodeApi instance
-- `src/OpenCodeViewProvider.ts` - Reduced to ~190 lines: init, agent persistence, proxyFetch handler with strict origin validation
-- `src/OpenCodeService.ts` - Reduced to ~120 lines: server spawn only
-- `src/webview/App.tsx` - Uses useOpenCode instead of useVsCodeBridge
+- `src/CodeFreeOViewProvider.ts` - Reduced to ~190 lines: init, agent persistence, proxyFetch handler with strict origin validation
+- `src/CodeFreeOService.ts` - Reduced to ~120 lines: server spawn only
+- `src/webview/App.tsx` - Uses useCodeFreeO instead of useVsCodeBridge
 - Deleted: `src/webview/hooks/useVsCodeBridge.ts`
 
 **CORS workaround:**

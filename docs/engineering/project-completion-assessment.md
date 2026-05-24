@@ -24,7 +24,7 @@ The worktree was dirty during assessment. Do not assume every listed behavior is
 Modified files:
 
 ```text
-src/OpenCodeViewProvider.ts
+src/CodeFreeOViewProvider.ts
 src/shared/messages.ts
 src/webview/App.css
 src/webview/App.tsx
@@ -93,8 +93,8 @@ Since `pnpm` is unavailable, the configured web server exits immediately. This i
 The following areas have substantial implementation:
 
 - VS Code activation, logging, service lifecycle, and command registration in `src/extension.ts`.
-- CodeFree-O CLI preflight, server startup, SDK client creation, workspace directory wiring, and disposal in `src/OpenCodeService.ts`.
-- Webview provider, host/webview protocol handling, proxy fetch, SSE proxying, file opening, terminal opening, session fork/revert/share/delete/rename, and diff display in `src/OpenCodeViewProvider.ts`.
+- CodeFree-O CLI preflight, server startup, SDK client creation, workspace directory wiring, and disposal in `src/CodeFreeOService.ts`.
+- Webview provider, host/webview protocol handling, proxy fetch, SSE proxying, file opening, terminal opening, session fork/revert/share/delete/rename, and diff display in `src/CodeFreeOViewProvider.ts`.
 - SolidJS chat UI, session selection, message queue, prompt send/cancel, edit/revert, file mentions, selection attachments, image paste state, permissions, questions, todos, context indicator, file changes summary, agent selection, and model selection in `src/webview/App.tsx`.
 - Server-owned state sync in `src/webview/state/bootstrap.ts`, `src/webview/state/sync.tsx`, and `src/webview/state/eventHandlers.ts`.
 - Markdown/streaming rendering and Shiki highlighting under `src/webview/lib/streamdown`.
@@ -242,8 +242,8 @@ Reason: `playwright.config.ts` invokes `pnpm dev:webview --port 5199 --strictPor
 - `AGENTS.md`: project-specific conventions and SDK notes.
 - `package.json`: scripts, extension manifest, and runtime dependencies.
 - `src/extension.ts`: extension activation and command registration.
-- `src/OpenCodeService.ts`: CodeFree-O server lifecycle.
-- `src/OpenCodeViewProvider.ts`: host/webview protocol and VS Code integrations.
+- `src/CodeFreeOService.ts`: CodeFree-O server lifecycle.
+- `src/CodeFreeOViewProvider.ts`: host/webview protocol and VS Code integrations.
 - `src/webview/App.tsx`: main UI orchestration.
 - `src/webview/state/bootstrap.ts`: initial SDK fetch and normalization.
 - `src/webview/state/sync.tsx`: sync provider and store surface.

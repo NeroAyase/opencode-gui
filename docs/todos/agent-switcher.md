@@ -44,7 +44,7 @@ Add an agent switcher UI component that allows users to toggle between different
 
 ## Implementation Spec
 
-### 1. Backend Changes (OpenCodeService.ts)
+### 1. Backend Changes (CodeFreeOService.ts)
 
 #### Add Agent Management
 
@@ -98,7 +98,7 @@ const result = await this.opencode.client.session.prompt({
 });
 ```
 
-### 2. Backend Changes (OpenCodeViewProvider.ts)
+### 2. Backend Changes (CodeFreeOViewProvider.ts)
 
 #### Handle New Messages
 
@@ -108,7 +108,7 @@ Add handling for agent-related messages:
 
 ```typescript
 case 'getAgents':
-  const agents = await this.openCodeService.getAgents();
+  const agents = await this.codefreeOService.getAgents();
   this._view.webview.postMessage({ 
     type: 'agentList', 
     agents: agents 
@@ -124,7 +124,7 @@ Update `sendPrompt` message handler to include agent:
 
 ```typescript
 case 'sendPrompt':
-  await this.openCodeService.sendPromptStreaming(
+  await this.codefreeOService.sendPromptStreaming(
     message.text,
     (event) => { /* ... */ },
     undefined,
@@ -409,8 +409,8 @@ const AgentSwitcher = () => {
 
 1. ✅ Research OpenCode API and current UI
 2. ✅ Write spec document
-3. ⏳ Update OpenCodeService.ts with agent methods
-4. ⏳ Update OpenCodeViewProvider.ts with agent message handlers
+3. ⏳ Update CodeFreeOService.ts with agent methods
+4. ⏳ Update CodeFreeOViewProvider.ts with agent message handlers
 5. ⏳ Update App.tsx with agent state and switcher component
 6. ⏳ Update App.css with new styles
 7. ⏳ Test with workspace that has multiple agents configured
@@ -444,9 +444,9 @@ const AgentSwitcher = () => {
 - [x] Research completed
 - [x] Spec written
 - [x] Implementation completed
-  - [x] Backend: Added `getAgents()` method to OpenCodeService
+  - [x] Backend: Added `getAgents()` method to CodeFreeOService
   - [x] Backend: Updated `sendPrompt` and `sendPromptStreaming` to accept agent parameter
-  - [x] Backend: Added `getAgents` and updated `sendPrompt` handlers in OpenCodeViewProvider
+  - [x] Backend: Added `getAgents` and updated `sendPrompt` handlers in CodeFreeOViewProvider
   - [x] Frontend: Added Agent interface and state management
   - [x] Frontend: Added `AgentSwitcher` component with dropdown
   - [x] Frontend: Updated input rendering to include agent switcher and button row
@@ -459,7 +459,7 @@ const AgentSwitcher = () => {
 
 ## What Was Implemented
 
-### Backend (OpenCodeService.ts)
+### Backend (CodeFreeOService.ts)
 - Added `agents: Agent[]` property to track available agents
 - Added `getAgents()` method that:
   - Calls `app.agents()` API
@@ -469,7 +469,7 @@ const AgentSwitcher = () => {
 - Updated `sendPromptStreaming()` to accept optional `agent?: string` parameter
 - Both methods now include agent in the prompt body when specified
 
-### Backend (OpenCodeViewProvider.ts)
+### Backend (CodeFreeOViewProvider.ts)
 - Added `getAgents` message handler that:
   - Calls `getAgents()` from service
   - Sends agent list to webview via `agentList` message

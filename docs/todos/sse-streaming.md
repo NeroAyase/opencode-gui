@@ -103,12 +103,12 @@ RivetKit (https://www.rivet.dev/docs/actors/) returned a 404 error, indicating t
 
 We'll implement streaming using a three-layer architecture:
 
-1. **OpenCodeService** (Extension side): 
+1. **CodeFreeOService** (Extension side): 
    - Subscribe to SSE events when sending a prompt
    - Filter events for the current session
    - Forward relevant events to the webview
 
-2. **OpenCodeViewProvider** (Message bridge):
+2. **CodeFreeOViewProvider** (Message bridge):
    - Route streaming events from service to webview
    - Handle stream lifecycle (start/stop)
 
@@ -119,7 +119,7 @@ We'll implement streaming using a three-layer architecture:
 
 ### Detailed Implementation Steps
 
-#### 1. Update OpenCodeService
+#### 1. Update CodeFreeOService
 
 Add a new method `sendPromptStreaming()` that:
 - Calls `session.prompt()` to initiate the prompt
@@ -201,7 +201,7 @@ async sendPromptStreaming(
 }
 ```
 
-#### 2. Update OpenCodeViewProvider
+#### 2. Update CodeFreeOViewProvider
 
 Modify `_handleSendPrompt()` to use the new streaming method:
 
@@ -211,7 +211,7 @@ private async _handleSendPrompt(text: string) {
     this._sendMessage({ type: 'thinking', thinking: true });
 
     // Send prompt with streaming
-    await this.openCodeService.sendPromptStreaming(
+    await this.codefreeOService.sendPromptStreaming(
       text,
       (event) => this._handleStreamEvent(event)
     );
@@ -370,8 +370,8 @@ useEffect(() => {
 - ✅ Identified key event types (`message.part.updated`, `session.idle`)
 - ✅ Evaluated RivetKit (not needed - OpenCode SDK has built-in SSE support)
 - ✅ Created implementation plan
-- ✅ Implemented `sendPromptStreaming()` in OpenCodeService
-- ✅ Updated OpenCodeViewProvider to handle streaming events
+- ✅ Implemented `sendPromptStreaming()` in CodeFreeOService
+- ✅ Updated CodeFreeOViewProvider to handle streaming events
 - ✅ Added streaming message types to webview (`part-update`, `message-update`)
 - ✅ Updated React app to handle real-time part updates
 - ✅ Build successful with no errors
@@ -380,7 +380,7 @@ useEffect(() => {
 
 **Files Modified:**
 
-1. **src/OpenCodeService.ts**:
+1. **src/CodeFreeOService.ts**:
    - Added `Event` type import from `@opencode-ai/sdk`
    - Implemented `sendPromptStreaming()` method that:
      - Sends the prompt asynchronously
@@ -390,7 +390,7 @@ useEffect(() => {
      - Stops streaming when `session.idle` is received
      - Handles errors and cleanup properly
 
-2. **src/OpenCodeViewProvider.ts**:
+2. **src/CodeFreeOViewProvider.ts**:
    - Added `Event` type import from `@opencode-ai/sdk`
    - Modified `_handleSendPrompt()` to use `sendPromptStreaming()` instead of `sendPrompt()`
    - Implemented `_handleStreamEvent()` to process different event types:

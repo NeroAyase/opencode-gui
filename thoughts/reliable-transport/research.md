@@ -37,12 +37,12 @@ Understand how the OpenCode TUI handles reliable client/server messaging and com
 ## Current extension/webview behavior
 - **OpenCode server is started by the extension**
   - Server is launched on `127.0.0.1` with a random port via `createOpencode`.
-  - Source: `src/OpenCodeService.ts`.
+  - Source: `src/CodeFreeOService.ts`.
 
 - **SSE proxy is minimal and non-resilient**
   - Extension uses a one-shot `fetch` stream without `Last-Event-ID`, retry, or backoff.
   - Webview proxy just forwards events and does not reconnect on error.
-  - Sources: `src/OpenCodeViewProvider.ts`, `src/webview/utils/proxyEventSource.ts`.
+  - Sources: `src/CodeFreeOViewProvider.ts`, `src/webview/utils/proxyEventSource.ts`.
 
 - **Webview treats transport errors as expected noise**
   - `sendPrompt` errors like "proxy fetch timed out" / "aborted" are ignored.

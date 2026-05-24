@@ -122,7 +122,7 @@ When everything works:
 ## 📚 Files to Edit
 
 - `src/extension.ts` - Extension entry point
-- `src/OpenCodeViewProvider.ts` - Webview provider logic  
+- `src/CodeFreeOViewProvider.ts` - Webview provider logic  
 - `src/webview/App.tsx` - SolidJS UI
 - `src/webview/App.css` - Styles
 

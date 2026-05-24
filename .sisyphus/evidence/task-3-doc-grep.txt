@@ -1,0 +1,16 @@
+=== Task 3: Documentation Rename Verification ===
+Date: 2026-05-24
+
+=== Grep: Old file/symbol names in .md files ===
+Patterns searched: OpenCodeService, OpenCodeViewProvider, useOpenCode, openCodeService, OpencodeInstance, createOpenCode, _openCodeService, OpenCodeViewProvider.viewType
+
+Result: ZERO MATCHES for all patterns. All old references have been replaced.
+
+=== Grep: anomalyco/opencode attribution references (must be preserved) ===
+Found 17 matches in 3 files (AGENTS.md, docs/engineering/spec-sisyphus-workflow.md, docs/OPENCODE_TUI_SYNC_SYSTEM.md)
+All are upstream TUI attribution references — correctly preserved.
+
+=== openCodeService ===
+ZERO MATCHES — all replaced with codefreeOService.
+
+VERIFICATION: PASSED

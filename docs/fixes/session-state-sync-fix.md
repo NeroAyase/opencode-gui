@@ -8,13 +8,13 @@ When the OpenCode VSCode extension webview is reopened (after being closed/hidde
 
 The issue was a state synchronization problem between the webview (UI) and the extension backend:
 
-1. **Backend state persists**: `OpenCodeService` maintains `currentSessionId` and `currentSessionTitle` as instance variables that survive when the webview is hidden/closed.
+1. **Backend state persists**: `CodeFreeOService` maintains `currentSessionId` and `currentSessionTitle` as instance variables that survive when the webview is hidden/closed.
 
 2. **Webview state resets**: When the webview reopens, it reinitializes with default values (`currentSessionTitle = "New Session"`, `currentSessionId = null`).
 
 3. **No state restoration**: The initialization flow (`onMount` → "ready" → "init") did not include the active session state, so the webview had no way to know about the backend's active session.
 
-4. **Divergent behavior**: When sending a prompt, the backend would use the existing `currentSessionId` (line 146 in OpenCodeViewProvider.ts) while the UI thought it was starting a new session.
+4. **Divergent behavior**: When sending a prompt, the backend would use the existing `currentSessionId` (line 146 in CodeFreeOViewProvider.ts) while the UI thought it was starting a new session.
 
 ## Solution
 
@@ -27,10 +27,10 @@ Added session state fields to the `init` message type:
 - `currentSessionTitle?: string`  
 - `currentSessionMessages?: IncomingMessage[]`
 
-### 2. Backend Changes (`src/OpenCodeViewProvider.ts`)
+### 2. Backend Changes (`src/CodeFreeOViewProvider.ts`)
 
 Created a new `_handleReady()` method that:
-- Retrieves current session ID and title from `OpenCodeService`
+- Retrieves current session ID and title from `CodeFreeOService`
 - If there's an active session, loads its messages
 - Sends all this data in the `init` message to the webview
 
@@ -44,7 +44,7 @@ Updated the `onInit` callback to:
 ## Files Modified
 
 1. `src/webview/types.ts` - Added session state to `HostMessage` init type
-2. `src/OpenCodeViewProvider.ts` - Added `_handleReady()` method to send session state on init
+2. `src/CodeFreeOViewProvider.ts` - Added `_handleReady()` method to send session state on init
 3. `src/webview/hooks/useVsCodeBridge.ts` - Updated callback signature to receive session state
 4. `src/webview/App.tsx` - Restored session state in `onInit` handler
 

@@ -45,7 +45,7 @@ The OpenCode SDK provides comprehensive session management:
    - `client.session.delete({ path: { id } })` - Delete session
 
 3. **Current Implementation**
-   - `OpenCodeService.createSession(title?)` already exists and supports titles
+   - `CodeFreeOService.createSession(title?)` already exists and supports titles
    - Currently creates sessions with default title "VSCode Session"
    - Only tracks `currentSessionId` but doesn't fetch/display available sessions
 
@@ -115,7 +115,7 @@ The OpenCode SDK provides comprehensive session management:
 
 ## Implementation Plan
 
-### 1. Backend Changes (OpenCodeService.ts)
+### 1. Backend Changes (CodeFreeOService.ts)
 
 Add methods:
 ```typescript
@@ -242,7 +242,7 @@ Update `App.tsx`:
 
 ### What Was Implemented
 
-1. **Backend (OpenCodeService.ts)**
+1. **Backend (CodeFreeOService.ts)**
    - `listSessions()` - Fetches all sessions from OpenCode API
    - `switchSession(sessionId)` - Switches to a different session and updates state
    - `createNewSession(title?)` - Creates new session with auto-generated or custom title
@@ -255,7 +255,7 @@ Update `App.tsx`:
    - Extended `HostMessage` type with `session-list` and `session-switched` messages
    - Extended `WebviewMessage` type with `load-sessions`, `switch-session`, and `create-session` messages
 
-3. **View Provider (OpenCodeViewProvider.ts)**
+3. **View Provider (CodeFreeOViewProvider.ts)**
    - `_handleLoadSessions()` - Loads and sends session list to webview
    - `_handleSwitchSession(sessionId)` - Switches session and notifies webview
    - `_handleCreateSession(title?)` - Creates new session and updates webview
@@ -300,8 +300,8 @@ Update `App.tsx`:
 
 ### Files Modified
 
-- `src/OpenCodeService.ts` - Added session management methods
-- `src/OpenCodeViewProvider.ts` - Added session message handlers
+- `src/CodeFreeOService.ts` - Added session management methods
+- `src/CodeFreeOViewProvider.ts` - Added session message handlers
 - `src/webview/types.ts` - Added Session interface and message types
 - `src/webview/hooks/useVsCodeBridge.ts` - Added session callbacks
 - `src/webview/App.tsx` - Integrated TopBar and session state

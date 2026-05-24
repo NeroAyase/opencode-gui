@@ -10,9 +10,9 @@ The OpenCode extension appears to open in the MacOS filesystem root (`/`) instea
 
 1. **Extension Activation** (`src/extension.ts`):
    - Line 12: Resolves workspace root: `vscode.workspace.workspaceFolders?.[0]?.uri.fsPath`
-   - Line 15: Passes workspace root to `openCodeService.initialize(workspaceRoot)`
+   - Line 15: Passes workspace root to `codefreeOService.initialize(workspaceRoot)`
 
-2. **OpenCode Service** (`src/OpenCodeService.ts`):
+2. **OpenCode Service** (`src/CodeFreeOService.ts`):
    - Line 20-48: `initialize(workspaceRoot?: string)` method
    - Line 29: Uses workspace root only to load `opencode.json` config file
    - Line 32-36: Creates OpenCode instance via `createOpencode()` from SDK
@@ -104,7 +104,7 @@ This confirms that the spawned `opencode serve` process needs to have the correc
 
 ## Implementation
 
-Modified `src/OpenCodeService.ts`:
+Modified `src/CodeFreeOService.ts`:
 1. Capture current working directory before initialization
 2. Check if workspace root exists and is valid
 3. Temporarily `process.chdir(workspaceRoot)` before calling `createOpencode()`

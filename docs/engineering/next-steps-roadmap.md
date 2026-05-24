@@ -37,7 +37,7 @@ These must be resolved before the extension can be considered release-ready.
 
 #### 1.2 Source file naming cleanup
 
-- **Scope**: Rename `OpenCodeService.ts` and `OpenCodeViewProvider.ts` to use CodeFree-O naming
+- **Scope**: Rename `CodeFreeOService.ts` and `CodeFreeOViewProvider.ts` to use CodeFree-O naming
 - **Rationale**: These are the last source files retaining the "OpenCode" prefix. All imports, the extension entry point, and any string references must be updated in lockstep. This is a functional prerequisite for CodeFree-O/OMO-driven recognition and invocation, not only cosmetic polish.
 - **Implementation guidance**:
   - Treat this as a mechanical rename only. Do not combine it with behavioral changes.
@@ -129,7 +129,7 @@ These are new features from the original TODO.md. Implement after Tier 1-2 are s
 - **Implementation guidance**:
   - First confirm whether the current loss occurs on webview hide/show, VS Code tab switch, workspace switch, or extension host reload. These are different lifecycle events.
   - Prefer workspace-scoped persistence for active session selection so one repository does not restore another repository's session.
-  - Check existing session restoration behavior in `OpenCodeViewProvider._handleReady` and `src/webview/state/sync.tsx` before adding new storage.
+  - Check existing session restoration behavior in `CodeFreeOViewProvider._handleReady` and `src/webview/state/sync.tsx` before adding new storage.
   - When restoring, validate that the session still exists and belongs to the current workspace directory.
   - Add an integration or e2e test if the lifecycle can be reproduced reliably.
 - **Acceptance criteria**:

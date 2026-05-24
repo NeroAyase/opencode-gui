@@ -49,7 +49,7 @@ This builds both:
 
 ### Making Changes
 
-- **Extension code** (src/extension.ts, src/OpenCodeService.ts, src/OpenCodeViewProvider.ts):
+- **Extension code** (src/extension.ts, src/CodeFreeOService.ts, src/CodeFreeOViewProvider.ts):
   - Save your changes
   - Reload the Extension Development Host window: `Cmd+R` (Mac) or `Ctrl+R` (Windows/Linux)
 
@@ -72,7 +72,7 @@ This builds both:
            ▼
 ┌─────────────────────────────────────┐
 │  Extension Host (Node.js)           │
-│  - OpenCodeService                  │
+│  - CodeFreeOService                 │
 │    ├─ Manages CodeFree-O client    │
 │    ├─ Creates sessions              │
 │    └─ Sends prompts                 │
@@ -90,9 +90,9 @@ This builds both:
 ### Key Components
 
 **Extension Side (TypeScript/ESM):**
-- `src/extension.ts`: Entry point, initializes OpenCodeService
-- `src/OpenCodeService.ts`: Manages CodeFree-O client/server, sessions, and prompts
-- `src/OpenCodeViewProvider.ts`: Webview provider, handles message passing
+- `src/extension.ts`: Entry point, initializes CodeFreeOService
+- `src/CodeFreeOService.ts`: Manages CodeFree-O client/server, sessions, and prompts
+- `src/CodeFreeOViewProvider.ts`: Webview provider, handles message passing
 
 **Webview Side (SolidJS):**
 - `src/webview/App.tsx`: Chat UI with input, message history, thinking indicator
@@ -126,8 +126,8 @@ Example workspace config:
 codefree-o-gui/
 ├── src/
 │   ├── extension.ts              # Extension entry point
-│   ├── OpenCodeService.ts        # CodeFree-O client/server manager
-│   ├── OpenCodeViewProvider.ts   # Webview provider
+│   ├── CodeFreeOService.ts        # CodeFree-O client/server manager
+│   ├── CodeFreeOViewProvider.ts   # Webview provider
 │   └── webview/                  # SolidJS UI
 │       ├── App.tsx               # Chat component
 │       ├── App.css               # Styles

@@ -22,7 +22,7 @@ Make existing shims environment-aware; same bundle runs in VSCode and browser.
 
 ## Step 2: Standalone config
 
-### `src/webview/hooks/useOpenCode.ts`
+### `src/webview/hooks/useCodeFreeO.ts`
 In `onMount`, check `window.OPENCODE_CONFIG` first:
 ```ts
 const globalConfig = (window as any).OPENCODE_CONFIG;

@@ -20,7 +20,7 @@ The implementation will use:
 ### Existing Files to Modify
 - [src/webview/components/InputBar.tsx](file:///Users/tanishqkancharla/Documents/Projects/saffron-health/opencode-gui/src/webview/components/InputBar.tsx) - Replace textarea with Tiptap editor
 - [src/webview/App.tsx](file:///Users/tanishqkancharla/Documents/Projects/saffron-health/opencode-gui/src/webview/App.tsx) - Extract mentions from editor content on submit
-- [src/OpenCodeViewProvider.ts](file:///Users/tanishqkancharla/Documents/Projects/saffron-health/opencode-gui/src/OpenCodeViewProvider.ts) - Add file search message handler
+- [src/CodeFreeOViewProvider.ts](file:///Users/tanishqkancharla/Documents/Projects/saffron-health/opencode-gui/src/CodeFreeOViewProvider.ts) - Add file search message handler
 - [src/webview/App.css](file:///Users/tanishqkancharla/Documents/Projects/saffron-health/opencode-gui/src/webview/App.css) - Add Tiptap editor styles
 - [package.json](file:///Users/tanishqkancharla/Documents/Projects/saffron-health/opencode-gui/package.json) - Add new dependencies
 
@@ -52,7 +52,7 @@ The implementation will use:
 
 ### Phase 2: Add file search handler in extension
 
-- [x] Add `searchFiles` message handler in [OpenCodeViewProvider.ts](file:///Users/tanishqkancharla/Documents/Projects/saffron-health/opencode-gui/src/OpenCodeViewProvider.ts)
+- [x] Add `searchFiles` message handler in [CodeFreeOViewProvider.ts](file:///Users/tanishqkancharla/Documents/Projects/saffron-health/opencode-gui/src/CodeFreeOViewProvider.ts)
 - [x] Accept `{ type: 'searchFiles', query: string }` message from webview
 - [x] Implement search using `vscode.workspace.findFiles(\`**/*\${query}*\`, excludePattern, 50)`
 - [x] Exclude patterns: `**/node_modules/**`, `**/.git/**`, `**/dist/**`, `**/out/**`, `**/.vscode/**`
