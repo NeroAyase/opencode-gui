@@ -8,7 +8,7 @@ The current source of truth is `docs/engineering/next-steps-roadmap.md` until a 
 
 ## TL;DR
 
-> **Quick Summary**: Verify and triage the E2E test suite, then rename all remaining "OpenCode" source files/symbols to "CodeFreeO" naming. These are the two release blockers before the extension can be considered release-ready.
+> **Quick Summary**: Rename all remaining "OpenCode" source files/symbols to "CodeFreeO" naming, then verify and triage the E2E test suite. The rename is a prerequisite because CodeFree-O/OMO recognition and invocation depend on the CodeFree-O naming alignment.
 > 
 > **Deliverables**:
 > - E2E test suite runs without environment errors; failures triaged and stale specs fixed
@@ -17,8 +17,8 @@ The current source of truth is `docs/engineering/next-steps-roadmap.md` until a 
 > - `.vscodeignore`/`.gitignore` updated for any log file renames
 > 
 > **Estimated Effort**: Medium (2-3 focused sessions)
-> **Parallel Execution**: YES - 2 waves
-> **Critical Path**: Task 1 (E2E) and Task 2 (Naming) are independent → Task 3 (Doc update) depends on Task 2
+> **Parallel Execution**: LIMITED - rename must complete before E2E
+> **Critical Path**: Task 2 (Naming) → Task 3 (Doc update) → Task 1 (E2E) → Final review
 
 ---
 
@@ -54,7 +54,7 @@ User wants to create a formal work plan for Tier 1 release blockers from the `ne
 ## Work Objectives
 
 ### Core Objective
-Verify the E2E test suite runs correctly against the current codebase and rename all remaining "OpenCode" source artifacts to "CodeFreeO" naming, making the extension consistent and release-ready.
+Rename all remaining "OpenCode" source artifacts to "CodeFreeO" naming, then verify the E2E test suite against the renamed codebase. The rename is required before testing because CodeFree-O/OMO recognition and invocation depend on these source and hook names.
 
 ### Concrete Deliverables
 - E2E triage report documenting pass/fail/skip status of all 33 tests
@@ -66,17 +66,17 @@ Verify the E2E test suite runs correctly against the current codebase and rename
 - 2 commits: one for source renames, one for doc updates
 
 ### Definition of Done
-- [ ] `pnpm test:e2e --workers=1` completes without environment errors
-- [ ] All category-A (stale spec) E2E failures are fixed
 - [ ] `grep -r "OpenCode" src/` returns only SDK import lines and env var string literals
 - [ ] `pnpm build` passes
 - [ ] `pnpm test` passes (314/314)
+- [ ] `pnpm test:e2e --workers=1` completes without environment errors after rename
+- [ ] All category-A (stale spec) E2E failures are fixed
 - [ ] `pnpm package` produces valid `.vsix` without `OpenCode.log`
 
 ### Must Have
-- E2E test suite runs without crashing (environment errors resolved)
 - All source-level "OpenCode" naming replaced with "CodeFreeO" (except SDK imports)
 - Build and unit tests pass after rename
+- E2E test suite runs without crashing against the renamed codebase (environment errors resolved)
 - Two separate commits (source + docs)
 
 ### Must NOT Have (Guardrails)
@@ -116,12 +116,14 @@ Evidence saved to `.sisyphus/evidence/task-{N}-{scenario-slug}.{ext}`.
 ### Parallel Execution Waves
 
 ```
-Wave 1 (Start Immediately - two independent tasks):
-├── Task 1: E2E test suite verification + triage [deep]
+Wave 1 (Start Immediately - prerequisite):
 └── Task 2: Source file naming cleanup [unspecified-high]
 
-Wave 2 (After Task 2 - doc update):
+Wave 2 (After Task 2):
 └── Task 3: Documentation naming update [quick]
+
+Wave 3 (After Task 3):
+└── Task 1: E2E test suite verification + triage [deep]
 
 Wave FINAL (After ALL tasks — 4 parallel reviews):
 ├── Task F1: Plan compliance audit (oracle)
@@ -130,18 +132,18 @@ Wave FINAL (After ALL tasks — 4 parallel reviews):
 └── Task F4: Scope fidelity check (deep)
 -> Present results -> Get explicit user okay
 
-Critical Path: Task 2 → Task 3 → F1-F4 → user okay
-Parallel Speedup: Task 1 and Task 2 run concurrently
-Max Concurrent: 2 (Wave 1)
+Critical Path: Task 2 → Task 3 → Task 1 → F1-F4 → user okay
+Parallel Speedup: None by default. Use separate worktrees only if the user explicitly asks to parallelize.
+Max Concurrent: 1 before final review
 ```
 
 ### Dependency Matrix
 
 | Task | Depends On | Blocks | Wave |
 |------|-----------|--------|------|
-| 1 | - | F1-F4 | 1 |
-| 2 | - | 3, F1-F4 | 1 |
-| 3 | 2 | F1-F4 | 2 |
+| 2 | - | 3, 1, F1-F4 | 1 |
+| 3 | 2 | 1, F1-F4 | 2 |
+| 1 | 3 | F1-F4 | 3 |
 | F1 | 1, 3 | user okay | FINAL |
 | F2 | 1, 3 | user okay | FINAL |
 | F3 | 1, 3 | user okay | FINAL |
@@ -149,8 +151,9 @@ Max Concurrent: 2 (Wave 1)
 
 ### Agent Dispatch Summary
 
-- **Wave 1**: 2 — T1 → `deep`, T2 → `unspecified-high`
-- **Wave 2**: 1 — T3 → `quick`
+- **Wave 1**: 1 — T2 → `unspecified-high`
+- **Wave 2**: 1 — T3 → `quick` (only after T2 completes)
+- **Wave 3**: 1 — T1 → `deep` (only after T3 completes)
 - **FINAL**: 4 — F1 → `oracle`, F2 → `unspecified-high`, F3 → `unspecified-high`, F4 → `deep`
 
 ---
@@ -158,6 +161,7 @@ Max Concurrent: 2 (Wave 1)
 - [ ] 1. E2E Test Suite Verification + Triage
 
   **What to do**:
+  - Confirm Task 2 source naming cleanup has completed and `pnpm build` + `pnpm test` passed before starting.
   - Install Playwright browsers: `npx playwright install chromium`
   - Run E2E tests with single worker: `pnpm test:e2e -- --workers=1 --reporter=list`
   - Capture full output (pass/fail/skip for each test)
@@ -187,10 +191,10 @@ Max Concurrent: 2 (Wave 1)
     - `playwright`: Not needed — agent runs Playwright via CLI (`pnpm test:e2e`), not via programmatic API
 
   **Parallelization**:
-  - **Can Run In Parallel**: YES
-  - **Parallel Group**: Wave 1 (with Task 2)
+  - **Can Run In Parallel**: NO
+  - **Parallel Group**: Wave 3 (after Task 2 and Task 3)
   - **Blocks**: F1-F4
-  - **Blocked By**: None (can start immediately)
+  - **Blocked By**: Task 2 and Task 3 (rename is required for CodeFree-O/OMO recognition and invocation; docs must match the renamed code before E2E triage is recorded)
 
   **References** (CRITICAL - Be Exhaustive):
 
@@ -354,9 +358,9 @@ Max Concurrent: 2 (Wave 1)
     - `git-master`: Not needed — `git mv` is straightforward, no complex git operations
 
   **Parallelization**:
-  - **Can Run In Parallel**: YES
-  - **Parallel Group**: Wave 1 (with Task 1)
-  - **Blocks**: Task 3, F1-F4
+  - **Can Run In Parallel**: NO
+  - **Parallel Group**: Wave 1 (prerequisite)
+  - **Blocks**: Task 1, Task 3, F1-F4
   - **Blocked By**: None (can start immediately)
 
   **References** (CRITICAL - Be Exhaustive):

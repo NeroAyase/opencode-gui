@@ -22,8 +22,9 @@ These must be resolved before the extension can be considered release-ready.
 #### 1.1 E2E test suite verification
 
 - **Scope**: Run `pnpm test:e2e` end-to-end and confirm all specs pass
-- **Rationale**: The `playwright.config.ts` fix (commit `3db9fbf`) removed the pnpm dependency, but the E2E specs themselves have never been verified against the current codebase. They were written for the original opencode-gui and may reference outdated selectors or flows
+- **Rationale**: The `playwright.config.ts` fix (commit `3db9fbf`) removed the pnpm dependency, but the E2E specs themselves have never been verified against the current codebase. They were written for the original opencode-gui and may reference outdated selectors or flows. Run this only after the source naming cleanup, because CodeFree-O/OMO recognition depends on the CodeFree-O naming alignment.
 - **Implementation guidance**:
+  - Treat 1.2 as a prerequisite. Do not start E2E verification against the old OpenCode source/hook names.
   - Start with `pnpm test:e2e -- --reporter=list` or the equivalent Playwright CLI if `pnpm` is unavailable.
   - If the dev server fails before specs run, inspect `playwright.config.ts` first rather than editing specs.
   - If selectors fail, update tests to target stable UI roles, labels, or `data-testid` attributes instead of fragile class names.
@@ -37,7 +38,7 @@ These must be resolved before the extension can be considered release-ready.
 #### 1.2 Source file naming cleanup
 
 - **Scope**: Rename `OpenCodeService.ts` and `OpenCodeViewProvider.ts` to use CodeFree-O naming
-- **Rationale**: These are the last two source files retaining the "OpenCode" prefix. All imports, the extension entry point, and any string references must be updated in lockstep
+- **Rationale**: These are the last source files retaining the "OpenCode" prefix. All imports, the extension entry point, and any string references must be updated in lockstep. This is a functional prerequisite for CodeFree-O/OMO-driven recognition and invocation, not only cosmetic polish.
 - **Implementation guidance**:
   - Treat this as a mechanical rename only. Do not combine it with behavioral changes.
   - Rename files with git-aware commands so history remains easy to follow.
@@ -212,8 +213,8 @@ These are new features from the original TODO.md. Implement after Tier 1-2 are s
 ## Suggested Execution Order
 
 ```
-1.1 E2E verification ──────────────────────────────┐
-1.2 Source file naming cleanup ─────────────────────┤
+1.2 Source file naming cleanup ─────────────────────┐
+1.1 E2E verification ───────────────────────────────┤
                                                     ├─ Tier 1 (release blockers)
                                                     │
 2.1 App.tsx refactoring ───────────────────────────┤
@@ -232,7 +233,7 @@ These are new features from the original TODO.md. Implement after Tier 1-2 are s
                                                     └─ Tier 4 (long-term)
 ```
 
-Within each tier, items can be parallelized. Between tiers, complete the current tier before starting the next.
+Within Tier 1, complete 1.2 before 1.1. Other items within a tier can be parallelized only when their prerequisites are satisfied and separate worktrees are used for conflicting edits. Between tiers, complete the current tier before starting the next.
 
 ## TODO.md Sync
 
