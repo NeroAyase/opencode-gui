@@ -131,6 +131,7 @@ async function startCodeFreeOServer(workspaceRoot: string): Promise<CodeFreeOSer
         cwd: workspaceRoot,
         stdio: ["ignore", "pipe", "pipe"],
         env: { ...process.env },
+        shell: process.platform === "win32",
       }
     );
 

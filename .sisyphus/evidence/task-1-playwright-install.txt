@@ -1,0 +1,4 @@
+Playwright chromium install verified
+Browser: chromium version 143.0.7499.4
+Location: C:\Users\neroa\AppData\Local\ms-playwright\chromium-1200
+Status: INSTALLED
