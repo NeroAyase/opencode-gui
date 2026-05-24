@@ -101,7 +101,7 @@
     "test:e2e:ui": "playwright test --ui",
     "debug:extension": "tsx scripts/debug-extension.ts",
     "demo:standalone": "./scripts/demo-standalone.sh",
-    "package": "vsce package",
+    "package": "vsce package --no-dependencies",
     "publish": "vsce publish --skip-duplicate --no-dependencies && source .env && ovsx publish -p \"$OPEN_VSX_KEY\" --no-dependencies",
     "publish:pre": "vsce publish --pre-release --no-dependencies && source .env && ovsx publish --pre-release -p \"$OPEN_VSX_KEY\" --no-dependencies",
     "google-login": "gcloud auth application-default login"

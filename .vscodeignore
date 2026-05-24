@@ -42,3 +42,4 @@ pnpm-lock.yaml
 uikit.html
 uikit.tsx
 uikit.css
+.sisyphus/**

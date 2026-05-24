@@ -9,6 +9,7 @@ out
 .vscode-test-demo
 .env
 .codex/environments/
+.sisyphus/
 
 CodeFreeO.log
 # Playwright test artifacts
