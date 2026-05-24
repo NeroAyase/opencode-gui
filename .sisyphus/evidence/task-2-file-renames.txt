@@ -1,0 +1,10 @@
+M	.gitignore
+M	.vscodeignore
+R090	src/OpenCodeService.ts	src/CodeFreeOService.ts
+R094	src/OpenCodeViewProvider.ts	src/CodeFreeOViewProvider.ts
+M	src/extension.ts
+M	src/webview/App.tsx
+R096	src/webview/hooks/useOpenCode.tsx	src/webview/hooks/useCodeFreeO.tsx
+M	src/webview/main.tsx
+M	src/webview/state/sync.tsx
+M	src/webview/utils/id.ts

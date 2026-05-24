@@ -10,7 +10,7 @@ out
 .env
 .codex/environments/
 
-OpenCode.log
+CodeFreeO.log
 # Playwright test artifacts
 test-results/
 playwright-report/

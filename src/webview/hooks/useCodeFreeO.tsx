@@ -40,7 +40,7 @@ export interface InitData {
   defaultAgent?: string;
 }
 
-function createOpenCode() {
+function createCodeFreeO() {
   const [client, setClient] = createSignal<OpencodeClient | null>(null);
   const [isReady, setIsReady] = createSignal(false);
   const [workspaceRoot, setWorkspaceRoot] = createSignal<string | undefined>(undefined);
@@ -52,12 +52,12 @@ function createOpenCode() {
     // Check for standalone config (for E2E tests / web app)
     const globalConfig = (window as { CODEFREE_O_CONFIG?: GlobalConfig }).CODEFREE_O_CONFIG;
     if (globalConfig?.serverUrl) {
-      const opencodeClient = createOpencodeClient({
+      const codefreeOClient = createOpencodeClient({
         baseUrl: globalConfig.serverUrl,
         fetch: proxyFetch,
         directory: globalConfig.workspaceRoot,
       });
-      setClient(opencodeClient);
+      setClient(codefreeOClient);
       setServerUrl(globalConfig.serverUrl);
       setIsReady(true);
       if (globalConfig.workspaceRoot) {
@@ -90,12 +90,12 @@ function createOpenCode() {
           setWorkspaceRoot(wsRoot);
         }
 
-        const opencodeClient = createOpencodeClient({
+        const codefreeOClient = createOpencodeClient({
           baseUrl: url,
           fetch: proxyFetch,
           directory: wsRoot,
         });
-        setClient(opencodeClient);
+        setClient(codefreeOClient);
         setServerUrl(url);
         setIsReady(true);
 
@@ -301,10 +301,10 @@ function createOpenCode() {
 }
 
 // Context
-const CodeFreeOContext = createContext<ReturnType<typeof createOpenCode>>();
+const CodeFreeOContext = createContext<ReturnType<typeof createCodeFreeO>>();
 
 export function CodeFreeOProvider(props: ParentProps) {
-  const value = createOpenCode();
+  const value = createCodeFreeO();
   return <CodeFreeOContext.Provider value={value}>{props.children}</CodeFreeOContext.Provider>;
 }
 

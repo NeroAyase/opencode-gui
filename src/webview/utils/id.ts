@@ -1,5 +1,5 @@
 /**
- * Sortable timestamp-based ID generation matching OpenCode server.
+ * Sortable timestamp-based ID generation matching CodeFree-O server.
  * Format: {prefix}_{12-char-hex-timestamp}{14-char-base62-random}
  *
  * The timestamp portion encodes: (BigInt(Date.now()) * 0x1000 + counter) masked to 48 bits

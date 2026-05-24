@@ -16,7 +16,7 @@ import {
   type ParentProps,
 } from "solid-js";
 import { createStore, produce } from "solid-js/store";
-import { useCodeFreeO, type Event, type SSEStatus } from "../hooks/useOpenCode";
+import { useCodeFreeO, type Event, type SSEStatus } from "../hooks/useCodeFreeO";
 import type { Message, Permission, QuestionRequest } from "../types";
 import { type SyncState, type SyncStatus, createEmptyState } from "./types";
 import { applyEvent, type EventHandlerContext } from "./eventHandlers";

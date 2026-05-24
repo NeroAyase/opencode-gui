@@ -9,7 +9,7 @@ import { TopBar } from "./components/TopBar";
 import { ContextIndicator } from "./components/ContextIndicator";
 import { FileChangesSummary } from "./components/FileChangesSummary";
 import { PermissionPrompt } from "./components/PermissionPrompt";
-import { useCodeFreeO, type PromptPartInput } from "./hooks/useOpenCode";
+import { useCodeFreeO, type PromptPartInput } from "./hooks/useCodeFreeO";
 import { useAutoAccept } from "./hooks/useAutoAccept";
 import { useSync } from "./state/sync";
 import type { FilePartInput } from "@srdcloud/codefree-o-sdk/v2/client";

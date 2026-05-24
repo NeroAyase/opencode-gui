@@ -1,0 +1,132 @@
+The CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.
+
+[7m[1m[36m RUN [39m[22m[27m [36mv1.6.1[39m [90mD:/VibeDev/Codefree-o-GUI[39m
+
+[90mstdout[2m | tests/frontend/bootstrap.test.ts[2m > [22m[2mFrontend Bootstrap[2m > [22m[2mshould fetch agents and sessions[22m[39m
+[CodeFree-O] Returning data {
+  "agentCount": 1,
+  "sessionCount": 1,
+  "messageCount": 0,
+  "sessionId": null
+}
+
+[90mstdout[2m | tests/frontend/bootstrap.test.ts[2m > [22m[2mFrontend Bootstrap[2m > [22m[2mshould intercept and mock agent list call[22m[39m
+[CodeFree-O] Returning data {
+  "agentCount": 1,
+  "sessionCount": 0,
+  "messageCount": 0,
+  "sessionId": null
+}
+
+[90mstdout[2m | tests/frontend/bootstrap.test.ts[2m > [22m[2mFrontend Bootstrap[2m > [22m[2mshould filter out hidden agents[22m[39m
+[CodeFree-O] Returning data {
+  "agentCount": 1,
+  "sessionCount": 0,
+  "messageCount": 0,
+  "sessionId": null
+}
+
+[90mstdout[2m | tests/frontend/bootstrap.test.ts[2m > [22m[2mFrontend Bootstrap[2m > [22m[2mshould filter out sessions with parentID[22m[39m
+[CodeFree-O] Returning data {
+  "agentCount": 0,
+  "sessionCount": 1,
+  "messageCount": 0,
+  "sessionId": null
+}
+
+[90mstdout[2m | tests/frontend/bootstrap.test.ts[2m > [22m[2mFrontend Bootstrap[2m > [22m[2mshould handle API errors gracefully[22m[39m
+[CodeFree-O] Returning data {
+  "agentCount": 0,
+  "sessionCount": 0,
+  "messageCount": 0,
+  "sessionId": null
+}
+
+stderr | tests/frontend/bootstrap.test.ts > Frontend Bootstrap > should handle API errors gracefully
+[CodeFree-O] Failed to load permissions during bootstrap: {
+  "error": {
+    "name": "Error",
+    "message": "Network error",
+[90mstdout[2m | tests/frontend/bootstrap.test.ts[2m > [22m[2mFrontend Bootstrap[2m > [22m[2mshould preserve message time metadata and API order from session.messages[22m[39m
+[CodeFree-O] Fetched messages {
+  "count": 2,
+  "sessionId": "session-1"
+}
+[CodeFree-O] Returning data {
+  "agentCount": 0,
+  "sessionCount": 0,
+  "messageCount": 2,
+  "sessionId": "session-1"
+}
+
+[90mstdout[2m | tests/frontend/bootstrap.test.ts[2m > [22m[2mFrontend Bootstrap[2m > [22m[2mshould handle client without optional APIs[22m[39m
+[CodeFree-O] Returning data {
+  "agentCount": 0,
+  "sessionCount": 0,
+  "messageCount": 0,
+  "sessionId": null
+}
+
+    "stack": "Error: Network error\n    at D:\\VibeDev\\Codefree-o-GUI\\tests\\frontend\\bootstrap.test.ts:328:37\n    at runTest (file:///D:/VibeDev/Codefree-o-GUI/node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:781:11)\n    at runSuite (file:///D:/VibeDev/Codefree-o-GUI/node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:909:15)\n    at runSuite (file:///D:/VibeDev/Codefree-o-GUI/node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:909:15)\n    at runFiles (file:///D:/VibeDev/Codefree-o-GUI/node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:958:5)\n    at startTests (file:///D:/VibeDev/Codefree-o-GUI/node_modules/.pnpm/@vitest+runner@1.6.1/node_modules/@vitest/runner/dist/index.js:967:3)\n    at file:///D:/VibeDev/Codefree-o-GUI/node_modules/.pnpm/vitest@1.6.1_@types+node@20.19.26/node_modules/vitest/dist/chunks/runtime-runBaseTests.oAvMKtQC.js:116:7\n    at withEnv (file:///D:/VibeDev/Codefree-o-GUI/node_modules/.pnpm/vitest@1.6.1_@types+node@20.19.26/node_modules/vitest/dist/chunks/runtime-runBaseTests.oAvMKtQC.js:83:5)\n    at run (file:///D:/VibeDev/Codefree-o-GUI/node_modules/.pnpm/vitest@1.6.1_@types+node@20.19.26/node_modules/vitest/dist/chunks/runtime-runBaseTests.oAvMKtQC.js:105:3)\n    at runBaseTests (file:///D:/VibeDev/Codefree-o-GUI/node_modules/.pnpm/vitest@1.6.1_@types+node@20.19.26/node_modules/vitest/dist/vendor/base.Ybri3C14.js:30:3)"
+  }
+}
+
+ [32m✓[39m tests/frontend/bootstrap.test.ts [2m ([22m[2m7 tests[22m[2m)[22m[90m 23[2mms[22m[39m
+ [32m✓[39m src/webview/lib/streamdown/remend/__tests__/code-blocks.test.ts [2m ([22m[2m17 tests[22m[2m)[22m[90m 10[2mms[22m[39m
+ [32m✓[39m src/webview/lib/streamdown/remend/__tests__/katex.test.ts [2m ([22m[2m28 tests[22m[2m)[22m[90m 14[2mms[22m[39m
+ [32m✓[39m src/webview/lib/streamdown/remend/__tests__/setext-heading.test.ts [2m ([22m[2m19 tests[22m[2m)[22m[90m 17[2mms[22m[39m
+ [32m✓[39m src/shared/messages.test.ts [2m ([22m[2m27 tests[22m[2m)[22m[90m 26[2mms[22m[39m
+ [32m✓[39m src/webview/lib/streamdown/streamdown.test.ts [2m ([22m[2m9 tests[22m[2m)[22m[90m 57[2mms[22m[39m
+ [32m✓[39m tests/frontend/simple-bootstrap.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[90m 13[2mms[22m[39m
+[90mstdout[2m | tests/frontend/simple-bootstrap.test.ts[2m > [22m[2mSimple Frontend Tests with Gatekeeper[2m > [22m[2mshould fetch basic data without interception[22m[39m
+[CodeFree-O] Returning data {
+  "agentCount": 1,
+  "sessionCount": 0,
+  "messageCount": 0,
+  "sessionId": null
+}
+
+[90mstdout[2m | tests/frontend/simple-bootstrap.test.ts[2m > [22m[2mSimple Frontend Tests with Gatekeeper[2m > [22m[2mshould mock API responses when gates are raised[22m[39m
+[CodeFree-O] Returning data {
+  "agentCount": 1,
+  "sessionCount": 0,
+  "messageCount": 0,
+  "sessionId": null
+}
+
+[90mstdout[2m | tests/frontend/simple-bootstrap.test.ts[2m > [22m[2mSimple Frontend Tests with Gatekeeper[2m > [22m[2mshould filter out system agents[22m[39m
+[CodeFree-O] Returning data {
+  "agentCount": 1,
+  "sessionCount": 0,
+  "messageCount": 0,
+  "sessionId": null
+}
+
+ [32m✓[39m src/webview/lib/streamdown/remend/__tests__/horizontal-rules.test.ts [2m ([22m[2m19 tests[22m[2m)[22m[90m 19[2mms[22m[39m
+ [32m✓[39m src/webview/lib/streamdown/remend/__tests__/italic.test.ts [2m ([22m[2m18 tests[22m[2m)[22m[90m 15[2mms[22m[39m
+ [32m✓[39m src/webview/lib/streamdown/parse-blocks.test.ts [2m ([22m[2m18 tests[22m[2m)[22m[90m 44[2mms[22m[39m
+ [32m✓[39m src/webview/lib/streamdown/remend/__tests__/lists.test.ts [2m ([22m[2m12 tests[22m[2m)[22m[90m 11[2mms[22m[39m
+ [32m✓[39m tests/utils/Gatekeeper.test.ts [2m ([22m[2m7 tests[22m[2m)[22m[90m 118[2mms[22m[39m
+ [32m✓[39m tests/frontend/message-handling.test.ts [2m ([22m[2m7 tests[22m[2m)[22m[90m 9[2mms[22m[39m
+ [32m✓[39m src/webview/utils/editorContent.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+ [32m✓[39m src/webview/lib/streamdown/remend/__tests__/bold-italic.test.ts [2m ([22m[2m9 tests[22m[2m)[22m[90m 11[2mms[22m[39m
+ [32m✓[39m src/webview/lib/streamdown/remend/__tests__/edge-cases.test.ts [2m ([22m[2m10 tests[22m[2m)[22m[90m 22[2mms[22m[39m
+ [32m✓[39m src/transport/__tests__/SseClient.test.ts [2m ([22m[2m22 tests[22m[2m)[22m[33m 1425[2mms[22m[39m
+ [32m✓[39m src/webview/lib/streamdown/remend/__tests__/links.test.ts [2m ([22m[2m7 tests[22m[2m)[22m[90m 9[2mms[22m[39m
+ [32m✓[39m src/webview/lib/streamdown/remend/__tests__/streaming.test.ts [2m ([22m[2m8 tests[22m[2m)[22m[90m 18[2mms[22m[39m
+ [32m✓[39m src/webview/lib/streamdown/remend/__tests__/utils.test.ts [2m ([22m[2m10 tests[22m[2m)[22m[90m 7[2mms[22m[39m
+ [32m✓[39m src/webview/lib/streamdown/remend/__tests__/mixed-formatting.test.ts [2m ([22m[2m12 tests[22m[2m)[22m[90m 18[2mms[22m[39m
+ [32m✓[39m src/webview/lib/streamdown/remend/__tests__/images.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 8[2mms[22m[39m
+ [32m✓[39m src/webview/lib/streamdown/remend/__tests__/inline-code.test.ts [2m ([22m[2m8 tests[22m[2m)[22m[90m 14[2mms[22m[39m
+ [32m✓[39m src/shared/fileReferences.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 7[2mms[22m[39m
+ [32m✓[39m src/webview/extensions/FileMention.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+ [32m✓[39m src/webview/utils/fileMentionReference.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 12[2mms[22m[39m
+ [32m✓[39m src/webview/lib/streamdown/remend/__tests__/bold.test.ts [2m ([22m[2m5 tests[22m[2m)[22m[90m 5[2mms[22m[39m
+ [32m✓[39m src/webview/lib/streamdown/remend/__tests__/strikethrough.test.ts [2m ([22m[2m4 tests[22m[2m)[22m[90m 7[2mms[22m[39m
+ [32m✓[39m src/webview/lib/streamdown/remend/__tests__/basic-input.test.ts [2m ([22m[2m3 tests[22m[2m)[22m[90m 3[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m29 passed[39m[22m[90m (29)[39m
+[2m      Tests [22m [1m[32m314 passed[39m[22m[90m (314)[39m
+[2m   Start at [22m 14:08:27
+[2m   Duration [22m 3.24s[2m (transform 1.57s, setup 2ms, collect 3.71s, tests 1.95s, environment 8ms, prepare 7.81s)[22m
+

@@ -1,6 +1,6 @@
 import { render } from 'solid-js/web';
 import App from './App';
-import { CodeFreeOProvider } from './hooks/useOpenCode';
+import { CodeFreeOProvider } from './hooks/useCodeFreeO';
 import { SyncProvider } from './state/sync';
 import './App.css';
 

@@ -12,7 +12,7 @@ import { getLogger } from "./extension";
 
 const CODEFREE_O_INSTALL_URL = "https://www.srdcloud.cn/feedback/feedback";
 
-interface OpencodeInstance {
+interface CodeFreeOInstance {
   client: OpencodeClient;
   server: {
     url: string;
@@ -20,15 +20,15 @@ interface OpencodeInstance {
   };
 }
 
-export class OpenCodeService {
-  private opencode: OpencodeInstance | null = null;
+export class CodeFreeOService {
+  private codefreeO: CodeFreeOInstance | null = null;
   private currentSessionId: string | null = null;
   private currentSessionTitle: string = "New Session";
   private isInitializing = false;
   private workspaceDir?: string;
 
   async initialize(workspaceRoot?: string): Promise<void> {
-    if (this.opencode || this.isInitializing) {
+    if (this.codefreeO || this.isInitializing) {
       return;
     }
 
@@ -75,7 +75,7 @@ export class OpenCodeService {
         directory: this.workspaceDir,
       });
 
-      this.opencode = { client, server };
+      this.codefreeO = { client, server };
     } catch (error) {
       getLogger().error("Failed to initialize CodeFree-O", error);
       await this.showStartupError(error);
@@ -152,11 +152,11 @@ export class OpenCodeService {
   async getMessages(
     sessionId: string,
   ): Promise<Message[]> {
-    if (!this.opencode) {
+    if (!this.codefreeO) {
       throw new Error("CodeFree-O not initialized");
     }
 
-    const result = await this.opencode.client.session.messages({
+    const result = await this.codefreeO.client.session.messages({
       sessionID: sessionId,
     });
 
@@ -170,15 +170,15 @@ export class OpenCodeService {
   }
 
   dispose(): void {
-    if (this.opencode) {
-      this.opencode.server.close();
-      this.opencode = null;
+    if (this.codefreeO) {
+      this.codefreeO.server.close();
+      this.codefreeO = null;
       this.currentSessionId = null;
     }
   }
 
   isReady(): boolean {
-    return this.opencode !== null && !this.isInitializing;
+    return this.codefreeO !== null && !this.isInitializing;
   }
 
   getWorkspaceRoot(): string | undefined {
@@ -186,10 +186,10 @@ export class OpenCodeService {
   }
 
   getServerUrl(): string | undefined {
-    return this.opencode?.server.url;
+    return this.codefreeO?.server.url;
   }
 
   getClient(): OpencodeClient | undefined {
-    return this.opencode?.client;
+    return this.codefreeO?.client;
   }
 }

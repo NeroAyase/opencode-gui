@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import * as path from "path";
 import { execFile } from "child_process";
-import { OpenCodeService } from "./OpenCodeService";
+import { CodeFreeOService } from "./CodeFreeOService";
 import { DiffContentProvider } from "./DiffContentProvider";
 import { getLogger } from "./extension";
 import type {
@@ -28,7 +28,7 @@ interface DevServerConfig {
   wsOrigin: string;
 }
 
-export class OpenCodeViewProvider implements vscode.WebviewViewProvider, vscode.Disposable {
+export class CodeFreeOViewProvider implements vscode.WebviewViewProvider, vscode.Disposable {
   public static readonly viewType = "codefree-o.chatView";
   private _view?: vscode.WebviewView;
   private _sseClients = new Map<string, SseClient>();
@@ -38,7 +38,7 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider, vscode.
 
   constructor(
     private readonly _extensionUri: vscode.Uri,
-    private readonly _openCodeService: OpenCodeService,
+    private readonly _codefreeOService: CodeFreeOService,
     private readonly _globalState: vscode.Memento,
     private readonly _diffProvider: DiffContentProvider,
   ) {}
@@ -285,15 +285,15 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider, vscode.
   private async _handleReady() {
     try {
       const currentSessionId =
-        this._openCodeService.getCurrentSessionId() ?? undefined;
+        this._codefreeOService.getCurrentSessionId() ?? undefined;
       const currentSessionTitle =
-        this._openCodeService.getCurrentSessionTitle();
+        this._codefreeOService.getCurrentSessionTitle();
 
       let messages: IncomingMessage[] | undefined;
       if (currentSessionId) {
         try {
           const sdkMessages =
-            await this._openCodeService.getMessages(currentSessionId);
+            await this._codefreeOService.getMessages(currentSessionId);
           // Transform SDK Message[] to IncomingMessage[]
           messages = sdkMessages.map((msg) => ({
             id: msg.id,
@@ -310,9 +310,9 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider, vscode.
 
       this._sendMessage({
         type: "init",
-        ready: this._openCodeService.isReady(),
-        workspaceRoot: this._openCodeService.getWorkspaceRoot(),
-        serverUrl: this._openCodeService.getServerUrl(),
+        ready: this._codefreeOService.isReady(),
+        workspaceRoot: this._codefreeOService.getWorkspaceRoot(),
+        serverUrl: this._codefreeOService.getServerUrl(),
         currentSessionId,
         currentSessionTitle,
         currentSessionMessages: messages,
@@ -328,9 +328,9 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider, vscode.
       });
       this._sendMessage({
         type: "init",
-        ready: this._openCodeService.isReady(),
-        workspaceRoot: this._openCodeService.getWorkspaceRoot(),
-        serverUrl: this._openCodeService.getServerUrl(),
+        ready: this._codefreeOService.isReady(),
+        workspaceRoot: this._codefreeOService.getWorkspaceRoot(),
+        serverUrl: this._codefreeOService.getServerUrl(),
         currentSessionId: undefined,
       });
       this._webviewReady = true;
@@ -345,7 +345,7 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider, vscode.
   }
 
   private async _handleSelectAgent() {
-    const client = this._openCodeService.getClient();
+    const client = this._codefreeOService.getClient();
     if (!client) {
       vscode.window.showWarningMessage("CodeFree-O is not ready yet.");
       return;
@@ -398,7 +398,7 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider, vscode.
   }
 
   private async _handleSelectModel() {
-    const client = this._openCodeService.getClient();
+    const client = this._codefreeOService.getClient();
     if (!client) {
       vscode.window.showWarningMessage("CodeFree-O is not ready yet.");
       return;
@@ -406,7 +406,7 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider, vscode.
 
     let providers: Array<{ id: string; name: string; models: Record<string, { id: string; name: string; providerID: string }> }>;
     try {
-      const dir = this._openCodeService.getWorkspaceRoot();
+      const dir = this._codefreeOService.getWorkspaceRoot();
       const result = await client.provider.list(dir ? { directory: dir } : undefined);
       if (result.error || !result.data) {
         vscode.window.showErrorMessage("Failed to fetch providers from CodeFree-O.");
@@ -466,7 +466,7 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider, vscode.
   }
 
   private async _handleProviderList() {
-    const client = this._openCodeService.getClient();
+    const client = this._codefreeOService.getClient();
     if (!client) {
       this._sendMessage({
         type: "provider-list-result",
@@ -476,7 +476,7 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider, vscode.
     }
 
     try {
-      const dir = this._openCodeService.getWorkspaceRoot();
+      const dir = this._codefreeOService.getWorkspaceRoot();
       const result = await client.provider.list(dir ? { directory: dir } : undefined);
       if (result.error || !result.data) {
         this._sendMessage({
@@ -511,7 +511,7 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider, vscode.
   }
 
   private async _handleCommandList() {
-    const client = this._openCodeService.getClient();
+    const client = this._codefreeOService.getClient();
     if (!client) {
       this._sendMessage({
         type: "command-list-result",
@@ -521,7 +521,7 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider, vscode.
     }
 
     try {
-      const dir = this._openCodeService.getWorkspaceRoot();
+      const dir = this._codefreeOService.getWorkspaceRoot();
       const result = await client.command.list(dir ? { directory: dir } : undefined);
       if (result.error || !result.data) {
         this._sendMessage({
@@ -553,7 +553,7 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider, vscode.
   private async _handleCommandExecute(
     message: { command: string; arguments?: string[]; sessionID: string; agent?: string; model?: string },
   ) {
-    const client = this._openCodeService.getClient();
+    const client = this._codefreeOService.getClient();
     if (!client) {
       const logger = getLogger();
       logger.error("[ViewProvider] Cannot execute command: client not ready");
@@ -580,14 +580,14 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider, vscode.
   private async _handleSessionFork(
     message: { sessionID: string; messageID?: string },
   ) {
-    const client = this._openCodeService.getClient();
+    const client = this._codefreeOService.getClient();
     if (!client) {
       vscode.window.showWarningMessage("CodeFree-O is not ready yet.");
       return;
     }
 
     try {
-      const dir = this._openCodeService.getWorkspaceRoot();
+      const dir = this._codefreeOService.getWorkspaceRoot();
       const result = await client.session.fork({
         sessionID: message.sessionID,
         ...(message.messageID ? { messageID: message.messageID } : {}),
@@ -610,14 +610,14 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider, vscode.
   private async _handleSessionRevert(
     message: { sessionID: string; messageID: string },
   ) {
-    const client = this._openCodeService.getClient();
+    const client = this._codefreeOService.getClient();
     if (!client) {
       vscode.window.showWarningMessage("CodeFree-O is not ready yet.");
       return;
     }
 
     try {
-      const dir = this._openCodeService.getWorkspaceRoot();
+      const dir = this._codefreeOService.getWorkspaceRoot();
       const result = await client.session.revert({
         sessionID: message.sessionID,
         messageID: message.messageID,
@@ -639,14 +639,14 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider, vscode.
   private async _handleSessionShare(
     message: { sessionID: string },
   ) {
-    const client = this._openCodeService.getClient();
+    const client = this._codefreeOService.getClient();
     if (!client) {
       vscode.window.showWarningMessage("CodeFree-O is not ready yet.");
       return;
     }
 
     try {
-      const dir = this._openCodeService.getWorkspaceRoot();
+      const dir = this._codefreeOService.getWorkspaceRoot();
       const result = await client.session.share({
         sessionID: message.sessionID,
         ...(dir ? { directory: dir } : {}),
@@ -677,14 +677,14 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider, vscode.
     );
     if (confirmed !== "Delete") return;
 
-    const client = this._openCodeService.getClient();
+    const client = this._codefreeOService.getClient();
     if (!client) {
       vscode.window.showWarningMessage("CodeFree-O is not ready yet.");
       return;
     }
 
     try {
-      const dir = this._openCodeService.getWorkspaceRoot();
+      const dir = this._codefreeOService.getWorkspaceRoot();
       await client.session.delete({
         sessionID: message.sessionID,
         ...(dir ? { directory: dir } : {}),
@@ -705,14 +705,14 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider, vscode.
     });
     if (!newTitle || newTitle === message.title) return;
 
-    const client = this._openCodeService.getClient();
+    const client = this._codefreeOService.getClient();
     if (!client) {
       vscode.window.showWarningMessage("CodeFree-O is not ready yet.");
       return;
     }
 
     try {
-      const dir = this._openCodeService.getWorkspaceRoot();
+      const dir = this._codefreeOService.getWorkspaceRoot();
       await client.session.update({
         sessionID: message.sessionID,
         title: newTitle,
@@ -727,7 +727,7 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider, vscode.
   }
 
   private _handleOpenTerminal(command?: string, cwd?: string): void {
-    const workspaceRoot = this._openCodeService.getWorkspaceRoot();
+    const workspaceRoot = this._codefreeOService.getWorkspaceRoot();
     const terminalCwd = cwd || workspaceRoot;
 
     const terminalOptions: vscode.TerminalOptions = {
@@ -749,7 +749,7 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider, vscode.
   }
 
   private _handleOpenDiff(filePath: string, before?: string, after?: string, patch?: string): void {
-    const workspaceRoot = this._openCodeService.getWorkspaceRoot();
+    const workspaceRoot = this._codefreeOService.getWorkspaceRoot();
     if (!workspaceRoot) return;
 
     const absPath = path.isAbsolute(filePath) ? filePath : path.join(workspaceRoot, filePath);
@@ -811,7 +811,7 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider, vscode.
       return;
     }
 
-    const serverUrl = this._openCodeService.getServerUrl();
+    const serverUrl = this._codefreeOService.getServerUrl();
     if (!serverUrl) {
       this._sendMessage({
         type: "sseError",
@@ -856,7 +856,7 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider, vscode.
 
     // Build headers including x-codefree-o-directory
     const headers: Record<string, string> = {};
-    const workspaceRoot = this._openCodeService.getWorkspaceRoot();
+    const workspaceRoot = this._codefreeOService.getWorkspaceRoot();
     if (workspaceRoot) {
       // Encode directory as per SDK client (percent-encode non-ASCII)
       headers["x-codefree-o-directory"] = encodeURIComponent(workspaceRoot);
@@ -962,7 +962,7 @@ export class OpenCodeViewProvider implements vscode.WebviewViewProvider, vscode.
       return;
     }
 
-    const serverUrl = this._openCodeService.getServerUrl();
+    const serverUrl = this._codefreeOService.getServerUrl();
 
     if (!serverUrl) {
       this._sendMessage({

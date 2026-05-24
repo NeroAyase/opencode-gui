@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
-import { OpenCodeService } from "./OpenCodeService";
-import { OpenCodeViewProvider } from "./OpenCodeViewProvider";
+import { CodeFreeOService } from "./CodeFreeOService";
+import { CodeFreeOViewProvider } from "./CodeFreeOViewProvider";
 import { DiffContentProvider } from "./DiffContentProvider";
 import type { HostMessage } from "./shared/messages";
 
@@ -21,14 +21,14 @@ export async function activate(context: vscode.ExtensionContext) {
     extensionPath: context.extensionPath,
   });
 
-  // Create OpenCode service
-  const openCodeService = new OpenCodeService();
+  // Create CodeFree-O service
+  const codefreeOService = new CodeFreeOService();
 
-  // Initialize OpenCode with workspace root
+  // Initialize CodeFree-O with workspace root
   const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 
   try {
-    await openCodeService.initialize(workspaceRoot);
+    await codefreeOService.initialize(workspaceRoot);
     logger.info("CodeFree-O service initialized successfully");
   } catch (error) {
     logger.error("Failed to initialize CodeFree-O service", error);
@@ -39,16 +39,16 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.workspace.registerTextDocumentContentProvider(DiffContentProvider.SCHEME, diffProvider)
   );
 
-  const provider = new OpenCodeViewProvider(
+  const provider = new CodeFreeOViewProvider(
     context.extensionUri,
-    openCodeService,
+    codefreeOService,
     context.globalState,
     diffProvider
   );
 
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(
-      OpenCodeViewProvider.viewType,
+      CodeFreeOViewProvider.viewType,
       provider
     )
   );
@@ -90,7 +90,7 @@ export async function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(addSelectionDisposable);
 
   // Cleanup on deactivation
-  context.subscriptions.push(openCodeService);
+  context.subscriptions.push(codefreeOService);
   context.subscriptions.push(provider);
 
   logger.info("CodeFree-O webview provider registered");

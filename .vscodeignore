@@ -22,7 +22,7 @@ vitest.config.ts
 **/*.map
 .env
 node_modules/**
-OpenCode.log
+CodeFreeO.log
 *.vsix
 docs/**
 thoughts/**
