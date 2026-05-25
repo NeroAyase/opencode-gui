@@ -2,18 +2,19 @@ import { createSignal, createMemo, Show, onMount, onCleanup, createEffect, For }
 import { InputBar } from "./components/InputBar";
 import { QuestionDock } from "./components/QuestionDock";
 import { TodoDock } from "./components/TodoDock";
-import type { TiptapEditorMethods } from "./components/TiptapEditor";
 import type { CommandItem } from "./components/CommandPalette";
 import { MessageList } from "./components/MessageList";
 import { TopBar } from "./components/TopBar";
 import { ContextIndicator } from "./components/ContextIndicator";
 import { FileChangesSummary } from "./components/FileChangesSummary";
 import { PermissionPrompt } from "./components/PermissionPrompt";
-import { useCodeFreeO, type PromptPartInput } from "./hooks/useCodeFreeO";
+import { useCodeFreeO } from "./hooks/useCodeFreeO";
 import { useAutoAccept } from "./hooks/useAutoAccept";
+import { useSessionDrafts } from "./hooks/useSessionDrafts";
+import { useAttachments, type SelectionAttachment } from "./hooks/useAttachments";
+import { useMentionInsertion } from "./hooks/useMentionInsertion";
 import { useSync } from "./state/sync";
-import type { FilePartInput } from "@srdcloud/codefree-o-sdk/v2/client";
-import type { Message, Agent, Session, Permission, FileChangesInfo, MessagePart, Model } from "./types";
+import type { Message, Agent, Session, Permission, Model } from "./types";
 import { parseHostMessage } from "./types";
 import type { ModelSelection } from "./utils/modelResolution";
 
@@ -30,36 +31,13 @@ interface InFlightMessage {
   sessionId: string;
 }
 
-interface FileMentionInsertRequest {
-  filePath: string;
-  startLine?: number;
-  endLine?: number;
-}
-
-interface SelectionAttachment {
-  id: string;
-  filePath: string;
-  fileUrl: string;
-  startLine?: number;
-  endLine?: number;
-}
-
-interface ImageAttachment {
-  id: string;
-  dataUrl: string; // base64 data URL
-  filename: string;
-  mimeType: string; // e.g. "image/png"
-}
 import { vscode } from "./utils/vscode";
 import { Id } from "./utils/id";
 import { logger } from "./utils/logger";
 import { extractMentions } from "./utils/editorContent";
 import {
-  encodeFileMentionReference,
   parseFileMentionReference,
 } from "./utils/fileMentionReference";
-
-const NEW_SESSION_KEY = "__new__";
 
 function App() {
   // Use the sync context for server-owned state
@@ -68,17 +46,32 @@ function App() {
   // Auto-accept toggle for permissions
   const autoAccept = useAutoAccept();
   
+  const mentionHook = useMentionInsertion();
+  
+  const { sessionKey, input, setInput, clearDraftContent } = useSessionDrafts(
+    () => sync.currentSessionId(),
+    mentionHook.editorMethods,
+  );
+  
+  const {
+    selectionAttachments,
+    setSelectionAttachments,
+    setSelectionAttachmentsForKey,
+    imageAttachments,
+    setImageAttachmentsBySession,
+    handleImagePaste,
+    attachmentChips,
+    handleRemoveAttachment,
+    buildSelectionParts,
+    buildImageParts,
+    buildWorkspaceFileUrl,
+    getFilename,
+    formatSelectionLabel,
+  } = useAttachments(sessionKey, sync.workspaceRoot);
+  
   // Local UI-only state
   const [defaultAgent, setDefaultAgent] = createSignal<string | null>(null);
-  const [drafts, setDrafts] = createSignal<Map<string, string>>(new Map());
-  const [draftContents, setDraftContents] = createSignal<Map<string, any>>(new Map()); // TipTap JSON content
   const [sessionAgents, setSessionAgents] = createSignal<Map<string, string>>(new Map());
-  const [selectionAttachmentsBySession, setSelectionAttachmentsBySession] = createSignal<
-    Map<string, SelectionAttachment[]>
-  >(new Map());
-  const [imageAttachmentsBySession, setImageAttachmentsBySession] = createSignal<
-    Map<string, ImageAttachment[]>
-  >(new Map());
   const [selectedModel, setSelectedModel] = createSignal<ModelSelection | null>(null);
   const [providers, setProviders] = createSignal<Array<{ id: string; name: string; models: Model[] }>>([]);
 
@@ -105,16 +98,9 @@ function App() {
   // Message queue for queuing messages while generating
   const [messageQueue, setMessageQueue] = createSignal<QueuedMessage[]>([]);
 
-  // Host selections received before editor methods are available
-  const [pendingMentionInsertions, setPendingMentionInsertions] = createSignal<FileMentionInsertRequest[]>([]);
-  const [pendingEditorFocus, setPendingEditorFocus] = createSignal(false);
-  
   // In-flight message tracking for outbox pattern
   const [inFlightMessage, setInFlightMessage] = createSignal<InFlightMessage | null>(null);
   
-  // Editor methods for managing content
-  let editorMethods: TiptapEditorMethods | null = null;
-
   // Get SDK hook for actions only
   const {
     initData,
@@ -132,9 +118,6 @@ function App() {
 
   // Slash commands
   const [commands, setCommands] = createSignal<CommandItem[]>([]);
-
-  // Get the current session key for drafts/agents
-  const sessionKey = () => sync.currentSessionId() || NEW_SESSION_KEY;
 
   const getSdkErrorMessage = (error: unknown): string => {
     if (typeof error === "string" && error.length > 0) return error;
@@ -194,31 +177,6 @@ function App() {
     return title && !isDefaultTitle(title) ? title : "New Session";
   });
 
-  // Current input for the active session
-  const input = () => drafts().get(sessionKey()) || "";
-  const setInput = (value: string) => {
-    const key = sessionKey();
-    setDrafts((prev) => {
-      const next = new Map(prev);
-      next.set(key, value);
-      return next;
-    });
-    
-    // Also save the editor JSON content when available
-    if (editorMethods) {
-      try {
-        const json = editorMethods.getJSON();
-        setDraftContents((prev) => {
-          const next = new Map(prev);
-          next.set(key, json);
-          return next;
-        });
-      } catch (err) {
-        // Editor might not be ready yet
-      }
-    }
-  };
-
   // Current agent for the active session.
   // New-session mode always uses the global default; existing sessions can override it.
   const selectedAgent = () => {
@@ -253,56 +211,6 @@ function App() {
   const isThinking = sync.isThinking;
   const sessionError = sync.sessionError;
 
-  const selectionAttachments = () => selectionAttachmentsBySession().get(sessionKey()) || [];
-  const setSelectionAttachmentsForKey = (
-    key: string,
-    value: SelectionAttachment[] | ((prev: SelectionAttachment[]) => SelectionAttachment[])
-  ) => {
-    setSelectionAttachmentsBySession((prev) => {
-      const next = new Map(prev);
-      const current = next.get(key) || [];
-      const updated = typeof value === "function" ? value(current) : value;
-      next.set(key, updated);
-      return next;
-    });
-  };
-  const setSelectionAttachments = (
-    value: SelectionAttachment[] | ((prev: SelectionAttachment[]) => SelectionAttachment[])
-  ) => {
-    setSelectionAttachmentsForKey(sessionKey(), value);
-  };
-
-  const imageAttachments = () => imageAttachmentsBySession().get(sessionKey()) || [];
-
-  const handleImagePaste = (dataUrl: string, filename: string) => {
-    const key = sessionKey();
-    const mimeType = dataUrl.match(/^data:(image\/\w+);/)?.[1] || "image/png";
-    const attachment: ImageAttachment = {
-      id: `img-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-      dataUrl,
-      filename,
-      mimeType,
-    };
-    setImageAttachmentsBySession((prev) => {
-      const next = new Map(prev);
-      const current = next.get(key) || [];
-      next.set(key, [...current, attachment]);
-      return next;
-    });
-  };
-
-  const getFilename = (filePath: string) => {
-    const normalized = filePath.replace(/\\/g, "/");
-    const parts = normalized.split("/");
-    return parts[parts.length - 1] || filePath;
-  };
-
-  const buildWorkspaceFileUrl = (workspaceRoot: string, relativePath: string) => {
-    const normalizedRoot = workspaceRoot.replace(/\\/g, "/").replace(/\/+$/, "");
-    const normalizedPath = relativePath.replace(/\\/g, "/").replace(/^\/+/, "");
-    const base = `file://${normalizedRoot}/`;
-    return new URL(normalizedPath, base).toString();
-  };
 
   const openFileFromMention = (filePath: string) => {
     const workspaceRoot = sync.workspaceRoot();
@@ -316,82 +224,6 @@ function App() {
     });
   };
 
-  const formatSelectionLabel = (attachment: SelectionAttachment) => {
-    const filename = getFilename(attachment.filePath);
-    if (attachment.startLine && attachment.endLine && attachment.startLine !== attachment.endLine) {
-      return `${filename} L${attachment.startLine}-${attachment.endLine}`;
-    }
-    if (attachment.startLine) {
-      return `${filename} L${attachment.startLine}`;
-    }
-    return filename;
-  };
-
-  const buildSelectionParts = (attachments: SelectionAttachment[]): FilePartInput[] => {
-    return attachments.map((attachment) => {
-      const url = new URL(attachment.fileUrl);
-      
-      if (attachment.startLine !== undefined) {
-        const start = attachment.endLine
-          ? Math.min(attachment.startLine, attachment.endLine)
-          : attachment.startLine;
-        const end = attachment.endLine
-          ? Math.max(attachment.startLine, attachment.endLine)
-          : attachment.startLine;
-        url.searchParams.set("start", String(start));
-        url.searchParams.set("end", String(end));
-      }
-      
-      return {
-        type: "file" as const,
-        mime: "text/plain",
-        url: url.toString(),
-        filename: getFilename(attachment.filePath),
-        source: {
-          type: "file" as const,
-          path: attachment.filePath,
-          text: {
-            value: "",
-            start: 0,
-            end: 0,
-          },
-        },
-      };
-    });
-  };
-
-  const buildImageParts = (images: ImageAttachment[]): FilePartInput[] => {
-    return images.map((img) => ({
-      type: "file" as const,
-      mime: img.mimeType,
-      url: img.dataUrl,
-      filename: img.filename,
-      source: {
-        type: "file" as const,
-        path: "",
-        text: {
-          value: "",
-          start: 0,
-          end: 0,
-        },
-      },
-    }));
-  };
-
-  const attachmentChips = createMemo(() => {
-    const selectionChips = selectionAttachments().map((attachment) => ({
-      id: attachment.id,
-      label: formatSelectionLabel(attachment),
-      title: attachment.filePath,
-    }));
-    const imageChips = imageAttachments().map((img) => ({
-      id: img.id,
-      label: img.filename,
-      title: img.filename,
-      imageUrl: img.dataUrl,
-    }));
-    return [...selectionChips, ...imageChips];
-  });
 
   const hasMessages = createMemo(() =>
     messages().some((m) => m.type === "user" || m.type === "assistant")
@@ -426,96 +258,6 @@ function App() {
       .sort((a, b) => b.time.updated - a.time.updated);
   });
 
-  const normalizeSelectionRange = (startLine?: number, endLine?: number) => {
-    if (startLine === undefined && endLine === undefined) return {};
-    if (startLine === undefined || endLine === undefined) {
-      const line = startLine ?? endLine;
-      return { startLine: line, endLine: line };
-    }
-    return {
-      startLine: Math.min(startLine, endLine),
-      endLine: Math.max(startLine, endLine),
-    };
-  };
-
-  const mentionInsertionKey = (request: FileMentionInsertRequest) =>
-    encodeFileMentionReference({
-      filePath: request.filePath,
-      startLine: request.startLine,
-      endLine: request.endLine,
-    });
-
-  const insertMentionFromHostSelection = (request: FileMentionInsertRequest): boolean => {
-    if (!editorMethods) {
-      return false;
-    }
-
-    try {
-      const existingMentions = new Set(extractMentions(editorMethods.getJSON()));
-      const requestKey = mentionInsertionKey(request);
-      if (!existingMentions.has(requestKey)) {
-        editorMethods.insertFileMention(request.filePath, request.startLine, request.endLine);
-      }
-      return true;
-    } catch (err) {
-      logger.error("Failed to insert file mention from editor selection", {
-        error: err,
-        filePath: request.filePath,
-        startLine: request.startLine,
-        endLine: request.endLine,
-      });
-      return false;
-    }
-  };
-
-  const queueMentionInsertion = (request: FileMentionInsertRequest) => {
-    const requestKey = mentionInsertionKey(request);
-    setPendingMentionInsertions((prev) => {
-      if (prev.some((item) => mentionInsertionKey(item) === requestKey)) {
-        return prev;
-      }
-      return [...prev, request];
-    });
-  };
-
-  const flushPendingMentionInsertions = () => {
-    if (!editorMethods) return;
-    const pending = pendingMentionInsertions();
-    if (pending.length === 0) return;
-
-    const failed: FileMentionInsertRequest[] = [];
-    for (const request of pending) {
-      if (!insertMentionFromHostSelection(request)) {
-        failed.push(request);
-      }
-    }
-    setPendingMentionInsertions(failed);
-  };
-
-  const focusEditorOrQueue = () => {
-    if (!editorMethods) {
-      setPendingEditorFocus(true);
-      return;
-    }
-    editorMethods.focus();
-    setPendingEditorFocus(false);
-  };
-
-  const handleEditorMethodsReady = (methods: TiptapEditorMethods) => {
-    editorMethods = methods;
-    if (pendingEditorFocus()) {
-      editorMethods.focus();
-      setPendingEditorFocus(false);
-    }
-    flushPendingMentionInsertions();
-  };
-
-  const insertMentionOrQueue = (request: FileMentionInsertRequest) => {
-    if (insertMentionFromHostSelection(request)) {
-      return;
-    }
-    queueMentionInsertion(request);
-  };
 
   onMount(() => {
     const handleHostMessage = (event: MessageEvent) => {
@@ -523,12 +265,12 @@ function App() {
       if (!parsed) return;
 
       if (parsed.type === "editor-selection") {
-        focusEditorOrQueue();
-        const normalizedRange = normalizeSelectionRange(
+        mentionHook.focusEditorOrQueue();
+        const normalizedRange = mentionHook.normalizeSelectionRange(
           parsed.selection?.startLine,
           parsed.selection?.endLine
         );
-        insertMentionOrQueue({
+        mentionHook.insertMentionOrQueue({
           filePath: parsed.filePath,
           startLine: normalizedRange.startLine,
           endLine: normalizedRange.endLine,
@@ -646,20 +388,6 @@ function App() {
     });
   });
 
-  // Restore editor content when session changes
-  createEffect(() => {
-    const key = sessionKey();
-    const savedContent = draftContents().get(key);
-    
-    if (editorMethods && savedContent) {
-      try {
-        editorMethods.setContent(savedContent);
-      } catch (err) {
-        logger.error("Failed to restore editor content", { error: err });
-      }
-    }
-  });
-  
   // Clear inFlightMessage when session becomes idle and trigger queue drain
   onMount(() => {
     const cleanup = sync.onSessionIdle((sessionId) => {
@@ -693,9 +421,10 @@ function App() {
     let attachments = selectionAttachments();
     
     // Extract mentions from editor and add to attachments
-    if (editorMethods) {
+    const methods = mentionHook.editorMethods();
+    if (methods) {
       try {
-        const editorJSON = editorMethods.getJSON();
+        const editorJSON = methods.getJSON();
         const mentionedFiles = extractMentions(editorJSON);
         const workspaceRoot = sync.workspaceRoot();
         if (!workspaceRoot) {
@@ -707,13 +436,14 @@ function App() {
           .map((mentionReference) => {
             const parsedMention = parseFileMentionReference(mentionReference);
             if (!parsedMention.filePath) return null;
-            return {
+            const attachment: SelectionAttachment = {
               id: `mention-${mentionReference}`,
               filePath: parsedMention.filePath,
               fileUrl: buildWorkspaceFileUrl(workspaceRoot, parsedMention.filePath),
-              startLine: parsedMention.startLine,
-              endLine: parsedMention.endLine,
-            } satisfies SelectionAttachment;
+            };
+            if (parsedMention.startLine !== undefined) attachment.startLine = parsedMention.startLine;
+            if (parsedMention.endLine !== undefined) attachment.endLine = parsedMention.endLine;
+            return attachment;
           })
           .filter((attachment): attachment is SelectionAttachment => attachment !== null);
         
@@ -758,15 +488,10 @@ function App() {
 
     // Clear both text and JSON content
     setInput("");
-    if (editorMethods) {
-      editorMethods.clear();
+    if (methods) {
+      methods.clear();
     }
-    const key = sessionKey();
-    setDraftContents((prev) => {
-      const next = new Map(prev);
-      next.delete(key);
-      return next;
-    });
+    clearDraftContent(sessionKey());
     sync.setThinking(sessionId, true);
 
     // Track this message as in-flight
@@ -910,15 +635,11 @@ function App() {
     
     setMessageQueue((prev) => [...prev, queuedMessage]);
     setInput("");
-    if (editorMethods) {
-      editorMethods.clear();
+    const editor = mentionHook.editorMethods();
+    if (editor) {
+      editor.clear();
     }
-    const key = sessionKey();
-    setDraftContents((prev) => {
-      const next = new Map(prev);
-      next.delete(key);
-      return next;
-    });
+    clearDraftContent(sessionKey());
     if (attachments.length > 0) {
       setSelectionAttachmentsForKey(attachmentsKey, []);
     }
@@ -937,8 +658,9 @@ function App() {
     // Remove this message and all after it
     setMessageQueue(queue.slice(0, index));
     // Update editor first so setInput captures the new JSON draft content.
-    if (editorMethods) {
-      editorMethods.setContent(message.text);
+    const editor = mentionHook.editorMethods();
+    if (editor) {
+      editor.setContent(message.text);
     }
     // Put the message text in the input
     setInput(message.text);
@@ -947,21 +669,6 @@ function App() {
     if (message.agent) {
       setSelectedAgent(message.agent);
     }
-  };
-
-  const handleRemoveAttachment = (id: string) => {
-    setSelectionAttachments((prev) => prev.filter((item) => item.id !== id));
-    // Also check image attachments
-    const key = sessionKey();
-    setImageAttachmentsBySession((prev) => {
-      const current = prev.get(key);
-      if (!current) return prev;
-      const filtered = current.filter((img) => img.id !== id);
-      if (filtered.length === current.length) return prev;
-      const next = new Map(prev);
-      next.set(key, filtered);
-      return next;
-    });
   };
 
   const handleSessionSelect = async (sessionId: string) => {
@@ -1037,9 +744,9 @@ function App() {
 
     // Clear editor
     setInput("");
-    if (editorMethods) editorMethods.clear();
-    const key = sessionKey();
-    setDraftContents((prev) => { const next = new Map(prev); next.delete(key); return next; });
+    const editor = mentionHook.editorMethods();
+    if (editor) editor.clear();
+    clearDraftContent(sessionKey());
     sync.setThinking(sessionId, true);
 
     try {
@@ -1264,7 +971,7 @@ function App() {
           }}
           commands={commands()}
           onCommandSelect={handleCommandSelect}
-          editorRef={handleEditorMethodsReady}
+          editorRef={mentionHook.handleEditorMethodsReady}
         />
       }>
         <QuestionDock
