@@ -6,7 +6,7 @@
   - Type slash, convert to slash command auto complete mode
 - [ ] Shell mode
   - Type exclamation, convert to shell mode
-- [ ] App.tsx refactoring — extract hooks (useMessageQueue, useAttachments, useMentionInsertion, useSessionDrafts, usePromptSend) from the 1200+ line file
+- [x] App.tsx refactoring — extract hooks (useMessageQueue, useAttachments, useMentionInsertion, useSessionDrafts, usePromptSend) from the 1200+ line file
   - ✅ Complete (commits e3eadea, 24441f5, 4f8e63f). App.tsx reduced from 1,220 to ~600 lines.
 - [x] Bundle optimization — Shiki language/theme lazy loading or pruning (main chunk ~1.6MB)
   - ✅ Complete (commit d026fbf). Minification + selective Shiki imports. App chunk ~311KB minified.
