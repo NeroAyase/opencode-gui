@@ -13,7 +13,7 @@ import { useCodeFreeO, type PromptPartInput } from "./hooks/useCodeFreeO";
 import { useAutoAccept } from "./hooks/useAutoAccept";
 import { useSync } from "./state/sync";
 import type { FilePartInput } from "@srdcloud/codefree-o-sdk/v2/client";
-import type { Message, Agent, Session, Permission, FileChangesInfo, MessagePart } from "./types";
+import type { Message, Agent, Session, Permission, FileChangesInfo, MessagePart, Model } from "./types";
 import { parseHostMessage } from "./types";
 import type { ModelSelection } from "./utils/modelResolution";
 
@@ -80,7 +80,24 @@ function App() {
     Map<string, ImageAttachment[]>
   >(new Map());
   const [selectedModel, setSelectedModel] = createSignal<ModelSelection | null>(null);
-  
+  const [providers, setProviders] = createSignal<Array<{ id: string; name: string; models: Model[] }>>([]);
+
+  // Check if the current model supports image attachments
+  const supportsImagePaste = createMemo(() => {
+    const model = selectedModel();
+    if (!model) return true; // Default to allowing paste if no model selected
+    const allProviders = providers();
+    for (const provider of allProviders) {
+      if (provider.id !== model.providerID) continue;
+      const modelData = provider.models.find((m) => m.id === model.modelID);
+      if (!modelData) continue;
+      const caps = modelData.capabilities;
+      if (!caps) return true; // If no capability info, allow paste
+      return caps.attachment && caps.input.image;
+    }
+    return true; // Model not found in providers, default to allowing
+  });
+
   // Editing state for previous messages
   const [editingMessageId, setEditingMessageId] = createSignal<string | null>(null);
   const [editingText, setEditingText] = createSignal<string>("");
@@ -106,6 +123,7 @@ function App() {
     sendPrompt,
     sendCommand,
     getCommands,
+    getProviders,
     respondToPermission,
     revertToMessage,
     hostError,
@@ -579,7 +597,7 @@ function App() {
     }
   });
 
-  // Fetch slash commands once the client is ready
+  // Fetch slash commands and providers once the client is ready
   createEffect(() => {
     if (!sync.isReady()) return;
     getCommands()?.then((result) => {
@@ -589,6 +607,42 @@ function App() {
       }
     }).catch((err) => {
       logger.error("Failed to fetch commands", { error: err });
+    });
+    getProviders()?.then((result) => {
+      if (result?.data) {
+        const providerList = result.data.all.map((p) => ({
+          id: p.id,
+          name: p.name,
+          models: Object.values(p.models).map((m) => ({
+            id: m.id,
+            name: m.name,
+            providerID: m.providerID,
+            capabilities: m.capabilities ? {
+              attachment: m.capabilities.attachment,
+              reasoning: m.capabilities.reasoning,
+              temperature: m.capabilities.temperature,
+              toolcall: m.capabilities.toolcall,
+              input: {
+                text: m.capabilities.input.text,
+                audio: m.capabilities.input.audio,
+                image: m.capabilities.input.image,
+                video: m.capabilities.input.video,
+                pdf: m.capabilities.input.pdf,
+              },
+              output: {
+                text: m.capabilities.output.text,
+                audio: m.capabilities.output.audio,
+                image: m.capabilities.output.image,
+                video: m.capabilities.output.video,
+                pdf: m.capabilities.output.pdf,
+              },
+            } : undefined,
+          })),
+        }));
+        setProviders(providerList);
+      }
+    }).catch((err) => {
+      logger.error("Failed to fetch providers", { error: err });
     });
   });
 
@@ -1201,6 +1255,13 @@ function App() {
           onRemoveAttachment={handleRemoveAttachment}
           onFileMentionClick={openFileFromMention}
           onImagePaste={handleImagePaste}
+          supportsImagePaste={supportsImagePaste()}
+          onImagePasteBlocked={() => {
+            vscode.postMessage({
+              type: "show-info",
+              message: "Current model does not support image attachments.",
+            });
+          }}
           commands={commands()}
           onCommandSelect={handleCommandSelect}
           editorRef={handleEditorMethodsReady}

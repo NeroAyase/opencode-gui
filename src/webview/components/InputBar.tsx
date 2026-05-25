@@ -28,6 +28,8 @@ interface InputBarProps {
   onRemoveAttachment: (id: string) => void;
   onFileMentionClick?: (filePath: string) => void;
   onImagePaste?: (dataUrl: string, filename: string) => void;
+  supportsImagePaste?: boolean;
+  onImagePasteBlocked?: () => void;
   commands?: CommandItem[];
   onCommandSelect?: (command: CommandItem) => void;
   editorRef?: (methods: TiptapEditorMethods) => void;
@@ -186,6 +188,8 @@ export function InputBar(props: InputBarProps) {
           searchFiles={searchFiles}
           onFileMentionClick={props.onFileMentionClick}
           onImagePaste={props.onImagePaste}
+          supportsImagePaste={props.supportsImagePaste}
+          onImagePasteBlocked={props.onImagePasteBlocked}
           commands={props.commands}
           onCommandSelect={props.onCommandSelect}
           ref={(methods) => {

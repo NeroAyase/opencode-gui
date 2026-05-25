@@ -31,6 +31,8 @@ export interface TiptapEditorProps {
   searchFiles: (query: string) => Promise<string[]>;
   onFileMentionClick?: (filePath: string) => void;
   onImagePaste?: (dataUrl: string, filename: string) => void;
+  supportsImagePaste?: boolean;
+  onImagePasteBlocked?: () => void;
   commands?: CommandItem[];
   onCommandSelect?: (command: CommandItem) => void;
   ref?: (methods: TiptapEditorMethods) => void;
@@ -113,6 +115,11 @@ export function TiptapEditor(props: TiptapEditorProps) {
         for (let i = 0; i < items.length; i++) {
           const item = items[i];
           if (item.type.startsWith("image/")) {
+            if (!props.supportsImagePaste) {
+              event.preventDefault();
+              props.onImagePasteBlocked?.();
+              return true;
+            }
             event.preventDefault();
             const file = item.getAsFile();
             if (!file) continue;

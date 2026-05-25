@@ -156,10 +156,33 @@ export const CommandSchema = z.object({
 });
 export type Command = z.infer<typeof CommandSchema>;
 
+export const ModelCapabilitiesSchema = z.object({
+  attachment: z.boolean(),
+  reasoning: z.boolean(),
+  temperature: z.boolean(),
+  toolcall: z.boolean(),
+  input: z.object({
+    text: z.boolean(),
+    audio: z.boolean(),
+    image: z.boolean(),
+    video: z.boolean(),
+    pdf: z.boolean(),
+  }),
+  output: z.object({
+    text: z.boolean(),
+    audio: z.boolean(),
+    image: z.boolean(),
+    video: z.boolean(),
+    pdf: z.boolean(),
+  }),
+});
+export type ModelCapabilities = z.infer<typeof ModelCapabilitiesSchema>;
+
 export const ModelSchema = z.object({
   id: z.string(),
   name: z.string(),
   providerID: z.string(),
+  capabilities: ModelCapabilitiesSchema.optional(),
 });
 export type Model = z.infer<typeof ModelSchema>;
 
@@ -375,6 +398,10 @@ export const WebviewMessageSchema = z.discriminatedUnion("type", [
   }),
   z.object({
     type: z.literal("provider-list"),
+  }),
+  z.object({
+    type: z.literal("show-info"),
+    message: z.string(),
   }),
 ]);
 export type WebviewMessage = z.infer<typeof WebviewMessageSchema>;

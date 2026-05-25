@@ -193,6 +193,9 @@ export class CodeFreeOViewProvider implements vscode.WebviewViewProvider, vscode
       case "open-terminal":
         this._handleOpenTerminal(message.command, message.cwd);
         break;
+      case "show-info":
+        vscode.window.showInformationMessage(message.message);
+        break;
     }
   }
 
@@ -493,6 +496,26 @@ export class CodeFreeOViewProvider implements vscode.WebviewViewProvider, vscode
           id: m.id,
           name: m.name,
           providerID: m.providerID,
+          capabilities: m.capabilities ? {
+            attachment: m.capabilities.attachment,
+            reasoning: m.capabilities.reasoning,
+            temperature: m.capabilities.temperature,
+            toolcall: m.capabilities.toolcall,
+            input: {
+              text: m.capabilities.input.text,
+              audio: m.capabilities.input.audio,
+              image: m.capabilities.input.image,
+              video: m.capabilities.input.video,
+              pdf: m.capabilities.input.pdf,
+            },
+            output: {
+              text: m.capabilities.output.text,
+              audio: m.capabilities.output.audio,
+              image: m.capabilities.output.image,
+              video: m.capabilities.output.video,
+              pdf: m.capabilities.output.pdf,
+            },
+          } : undefined,
         })),
       }));
 
@@ -782,7 +805,7 @@ export class CodeFreeOViewProvider implements vscode.WebviewViewProvider, vscode
       "vscode.diff",
       beforeUri,
       afterUri,
-      `${beforeTitle} ↔ ${afterTitle}`,
+      `${beforeTitle} -> ${afterTitle}`,
       { preview: true }
     );
   }

@@ -13,6 +13,7 @@ export type {
   WebviewMessage,
   QuestionInfo,
   QuestionRequest,
+  Model,
 } from "../shared/messages";
 
 export {

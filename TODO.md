@@ -6,7 +6,7 @@
   - Type slash, convert to slash command auto complete mode
 - [ ] Shell mode
   - Type exclamation, convert to shell mode
-- [ ] App.tsx refactoring — extract hooks (usePromptSend, useAttachments, useHostMessages) from the 1200+ line file
+- [ ] App.tsx refactoring — extract hooks (useMessageQueue, useAttachments, useMentionInsertion, useSessionDrafts, usePromptSend) from the 1200+ line file
 - [ ] Bundle optimization — Shiki language/theme lazy loading or pruning (main chunk ~1.6MB)
-- [ ] Image paste model capability check — verify capabilities.attachment before allowing paste
-- [ ] E2E test environment — playwright.config.ts web server command needs pnpm availability fix
+- [x] Image paste model capability check — verify capabilities.attachment before allowing paste
+- [x] E2E test environment — playwright.config.ts web server command needs pnpm availability fix
