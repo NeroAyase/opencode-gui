@@ -43,6 +43,7 @@ export async function activate(context: vscode.ExtensionContext) {
     context.extensionUri,
     codefreeOService,
     context.globalState,
+    context.workspaceState,
     diffProvider
   );
 

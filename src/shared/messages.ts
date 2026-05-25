@@ -403,6 +403,10 @@ export const WebviewMessageSchema = z.discriminatedUnion("type", [
     type: z.literal("show-info"),
     message: z.string(),
   }),
+  z.object({
+    type: z.literal("session-changed"),
+    sessionID: z.string().nullable(),
+  }),
 ]);
 export type WebviewMessage = z.infer<typeof WebviewMessageSchema>;
 

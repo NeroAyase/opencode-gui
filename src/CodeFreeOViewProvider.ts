@@ -19,6 +19,7 @@ import {
 } from "./transport/SseClient";
 
 const LAST_AGENT_KEY = "codefree-o.lastUsedAgent";
+const LAST_SESSION_KEY = "codefree-o.lastActiveSessionId";
 
 interface DevServerConfig {
   origin: string;
@@ -40,6 +41,7 @@ export class CodeFreeOViewProvider implements vscode.WebviewViewProvider, vscode
     private readonly _extensionUri: vscode.Uri,
     private readonly _codefreeOService: CodeFreeOService,
     private readonly _globalState: vscode.Memento,
+    private readonly _workspaceState: vscode.Memento,
     private readonly _diffProvider: DiffContentProvider,
   ) {}
 
@@ -196,6 +198,9 @@ export class CodeFreeOViewProvider implements vscode.WebviewViewProvider, vscode
       case "show-info":
         vscode.window.showInformationMessage(message.message);
         break;
+      case "session-changed":
+        await this._handleSessionChanged(message.sessionID);
+        break;
     }
   }
 
@@ -287,8 +292,28 @@ export class CodeFreeOViewProvider implements vscode.WebviewViewProvider, vscode
 
   private async _handleReady() {
     try {
-      const currentSessionId =
-        this._codefreeOService.getCurrentSessionId() ?? undefined;
+      // Restore order per Codex review:
+      // 1. Check service in-memory state first
+      // 2. Fall back to workspaceState persistence
+      // 3. Validate candidate session ID against raw SDK session list
+      let currentSessionId = this._codefreeOService.getCurrentSessionId();
+
+      if (!currentSessionId) {
+        const persistedId = this._workspaceState.get<string>(LAST_SESSION_KEY);
+        if (persistedId) {
+          const validatedId = await this._codefreeOService.validateSessionId(persistedId);
+          if (validatedId) {
+            currentSessionId = validatedId;
+            this._codefreeOService.setCurrentSessionId(validatedId);
+          } else {
+            // Invalid or stale — clear persistence
+            await this._workspaceState.update(LAST_SESSION_KEY, undefined);
+            const logger = getLogger();
+            logger.info("[ViewProvider] Clealed stale persisted session:", { persistedId });
+          }
+        }
+      }
+
       const currentSessionTitle =
         this._codefreeOService.getCurrentSessionTitle();
 
@@ -316,7 +341,7 @@ export class CodeFreeOViewProvider implements vscode.WebviewViewProvider, vscode
         ready: this._codefreeOService.isReady(),
         workspaceRoot: this._codefreeOService.getWorkspaceRoot(),
         serverUrl: this._codefreeOService.getServerUrl(),
-        currentSessionId,
+        currentSessionId: currentSessionId ?? undefined,
         currentSessionTitle,
         currentSessionMessages: messages,
         defaultAgent: this._globalState.get<string>(LAST_AGENT_KEY),
@@ -345,6 +370,23 @@ export class CodeFreeOViewProvider implements vscode.WebviewViewProvider, vscode
     await this._globalState.update(LAST_AGENT_KEY, agent);
     const logger = getLogger();
     logger.info("[ViewProvider] Agent selection persisted:", agent);
+  }
+
+  private async _handleSessionChanged(sessionID: string | null) {
+    // No-op guard: skip if session hasn't actually changed
+    const currentId = this._codefreeOService.getCurrentSessionId();
+    if (currentId === sessionID) return;
+
+    this._codefreeOService.setCurrentSessionId(sessionID);
+
+    if (sessionID) {
+      await this._workspaceState.update(LAST_SESSION_KEY, sessionID);
+    } else {
+      await this._workspaceState.update(LAST_SESSION_KEY, undefined);
+    }
+
+    const logger = getLogger();
+    logger.info("[ViewProvider] Session changed, persisted:", { sessionID });
   }
 
   private async _handleSelectAgent() {
