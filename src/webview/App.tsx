@@ -13,23 +13,11 @@ import { useAutoAccept } from "./hooks/useAutoAccept";
 import { useSessionDrafts } from "./hooks/useSessionDrafts";
 import { useAttachments, type SelectionAttachment } from "./hooks/useAttachments";
 import { useMentionInsertion } from "./hooks/useMentionInsertion";
+import { useMessageQueue, type QueuedMessage } from "./hooks/useMessageQueue";
 import { useSync } from "./state/sync";
 import type { Message, Agent, Session, Permission, Model } from "./types";
 import { parseHostMessage } from "./types";
 import type { ModelSelection } from "./utils/modelResolution";
-
-export interface QueuedMessage {
-  id: string;
-  text: string;
-  agent: string | null;
-  attachments: SelectionAttachment[];
-}
-
-// In-flight message tracking for the outbox (used for queue draining)
-interface InFlightMessage {
-  messageID: string;
-  sessionId: string;
-}
 
 import { vscode } from "./utils/vscode";
 import { Id } from "./utils/id";
@@ -69,6 +57,21 @@ function App() {
     formatSelectionLabel,
   } = useAttachments(sessionKey, sync.workspaceRoot);
   
+  // Get SDK hook for actions only
+  const {
+    initData,
+    createSession,
+    abortSession,
+    sendPrompt,
+    sendCommand,
+    getCommands,
+    getProviders,
+    respondToPermission,
+    revertToMessage,
+    hostError,
+    clearHostError,
+  } = useCodeFreeO();
+  
   // Local UI-only state
   const [defaultAgent, setDefaultAgent] = createSignal<string | null>(null);
   const [sessionAgents, setSessionAgents] = createSignal<Map<string, string>>(new Map());
@@ -94,27 +97,6 @@ function App() {
   // Editing state for previous messages
   const [editingMessageId, setEditingMessageId] = createSignal<string | null>(null);
   const [editingText, setEditingText] = createSignal<string>("");
-  
-  // Message queue for queuing messages while generating
-  const [messageQueue, setMessageQueue] = createSignal<QueuedMessage[]>([]);
-
-  // In-flight message tracking for outbox pattern
-  const [inFlightMessage, setInFlightMessage] = createSignal<InFlightMessage | null>(null);
-  
-  // Get SDK hook for actions only
-  const {
-    initData,
-    createSession,
-    abortSession,
-    sendPrompt,
-    sendCommand,
-    getCommands,
-    getProviders,
-    respondToPermission,
-    revertToMessage,
-    hostError,
-    clearHostError,
-  } = useCodeFreeO();
 
   // Slash commands
   const [commands, setCommands] = createSignal<CommandItem[]>([]);
@@ -198,6 +180,34 @@ function App() {
     });
   };
   
+  // Message queue hook
+  const {
+    messageQueue,
+    inFlightMessage,
+    setInFlightMessage,
+    setMessageQueue,
+    processNextQueuedMessage,
+    handleQueueMessage,
+    handleRemoveFromQueue,
+    handleEditQueuedMessage,
+  } = useMessageQueue({
+    sync,
+    sendPrompt,
+    selectedModel,
+    selectedAgent,
+    agents: sync.agents,
+    input,
+    setInput,
+    clearDraftContent,
+    sessionKey,
+    editorMethods: mentionHook.editorMethods,
+    selectionAttachments,
+    setSelectionAttachments,
+    setSelectionAttachmentsForKey,
+    buildSelectionParts,
+    setSelectedAgent,
+  });
+
   // Convenience accessors from sync store
   // Use the sync memos directly (not wrapped in functions) to maintain reactivity
   const messages = sync.messages;
@@ -388,25 +398,6 @@ function App() {
     });
   });
 
-  // Clear inFlightMessage when session becomes idle and trigger queue drain
-  onMount(() => {
-    const cleanup = sync.onSessionIdle((sessionId) => {
-      const inflight = inFlightMessage();
-      
-      if (inflight?.sessionId !== sessionId) {
-        return;
-      }
-      
-      setInFlightMessage(null);
-      
-      // Schedule queue drain in a microtask to avoid interleaving with SSE batch
-      queueMicrotask(() => {
-        void processNextQueuedMessage();
-      });
-    });
-    onCleanup(cleanup);
-  });
-
   // Handlers
   const handleSubmit = async () => {
     const text = input().trim();
@@ -548,126 +539,6 @@ function App() {
       sync.setThinking(sessionId, false);
       setInFlightMessage(null);
       sync.setSessionError(sessionId, errorMessage);
-    }
-  };
-
-  const processNextQueuedMessage = async () => {
-    const queue = messageQueue();
-    const inflight = inFlightMessage();
-    const sessionId = sync.currentSessionId();
-    
-    if (queue.length === 0) {
-      return;
-    }
-    
-    // Don't process if there's already an in-flight message
-    if (inflight) {
-      return;
-    }
-    
-    if (!sessionId || !sync.isReady()) {
-      return;
-    }
-    
-    const [next, ...rest] = queue;
-    
-    // Generate a FRESH messageID right before sending to ensure it's newer than the last assistant message
-    // This is critical - IDs generated earlier (when queueing) will be older than assistant responses
-    const messageID = Id.ascending("message");
-    
-    setMessageQueue(rest);
-    sync.setThinking(sessionId, true);
-    
-    // Track this queued message as in-flight using the fresh messageID
-    setInFlightMessage({ messageID, sessionId });
-
-    try {
-      const extraParts = buildSelectionParts(next.attachments);
-      
-      const result = await sendPrompt(sessionId, next.text, next.agent, extraParts, messageID, selectedModel());
-      const responseStatus = getResponseStatus(result);
-      
-      // Check for SDK error in result (SDK doesn't throw by default)
-      if (result?.error) {
-        const errorMessage = getSdkErrorMessage(result.error);
-        logger.error("queue sendPrompt returned error", {
-          sessionId,
-          messageID,
-          responseStatus,
-          errorMessage,
-          error: result.error,
-        });
-        sync.setThinking(sessionId, false);
-        setInFlightMessage(null);
-        setMessageQueue([]);
-        sync.setSessionError(sessionId, errorMessage);
-        return;
-      }
-    } catch (err) {
-      logger.error("Queue sendPrompt failed:", { error: err });
-      const errorMessage = (err as Error).message;
-      
-      // Show all errors inline and clear queue + in-flight
-      sync.setThinking(sessionId, false);
-      setInFlightMessage(null);
-      setMessageQueue([]);
-      sync.setSessionError(sessionId, errorMessage);
-    }
-  };
-
-  const handleQueueMessage = () => {
-    const text = input().trim();
-    if (!text || !sync.isReady()) return;
-    
-    const agent = agents().some((a) => a.name === selectedAgent())
-      ? selectedAgent()
-      : null;
-    const attachmentsKey = sessionKey();
-    const attachments = selectionAttachments();
-    
-    // Queue the message without a messageID - we'll generate it fresh when sending
-    const queuedMessage: QueuedMessage = {
-      id: crypto.randomUUID(),
-      text,
-      agent,
-      attachments,
-    };
-    
-    setMessageQueue((prev) => [...prev, queuedMessage]);
-    setInput("");
-    const editor = mentionHook.editorMethods();
-    if (editor) {
-      editor.clear();
-    }
-    clearDraftContent(sessionKey());
-    if (attachments.length > 0) {
-      setSelectionAttachmentsForKey(attachmentsKey, []);
-    }
-  };
-
-  const handleRemoveFromQueue = (id: string) => {
-    setMessageQueue((prev) => prev.filter((m) => m.id !== id));
-  };
-
-  const handleEditQueuedMessage = (id: string) => {
-    const queue = messageQueue();
-    const index = queue.findIndex((m) => m.id === id);
-    if (index === -1) return;
-    
-    const message = queue[index];
-    // Remove this message and all after it
-    setMessageQueue(queue.slice(0, index));
-    // Update editor first so setInput captures the new JSON draft content.
-    const editor = mentionHook.editorMethods();
-    if (editor) {
-      editor.setContent(message.text);
-    }
-    // Put the message text in the input
-    setInput(message.text);
-    setSelectionAttachments(message.attachments);
-    // Set the agent if different
-    if (message.agent) {
-      setSelectedAgent(message.agent);
     }
   };
 
