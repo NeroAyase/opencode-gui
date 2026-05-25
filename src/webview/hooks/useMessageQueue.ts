@@ -7,6 +7,7 @@ import type { FilePartInput } from "@srdcloud/codefree-o-sdk/v2/client";
 import { Id } from "../utils/id";
 import { logger } from "../utils/logger";
 import { useSync } from "../state/sync";
+import { getSdkErrorMessage, getResponseStatus } from "./usePromptSend";
 
 export interface QueuedMessage {
   id: string;
@@ -15,59 +16,11 @@ export interface QueuedMessage {
   attachments: SelectionAttachment[];
 }
 
-// In-flight message tracking for the outbox (internal to this hook)
-interface InFlightMessage {
+// In-flight message tracking for the outbox
+export interface InFlightMessage {
   messageID: string;
   sessionId: string;
 }
-
-// Private helpers duplicated from App.tsx (will be consolidated in usePromptSend later)
-const getSdkErrorMessage = (error: unknown): string => {
-  if (typeof error === "string" && error.length > 0) return error;
-  if (!error || typeof error !== "object") return "Unknown error";
-
-  const record = error as Record<string, unknown>;
-  const topLevelMessage = record.message;
-  if (typeof topLevelMessage === "string" && topLevelMessage.length > 0) {
-    return topLevelMessage;
-  }
-
-  const data = record.data;
-  if (data && typeof data === "object") {
-    const dataMessage = (data as Record<string, unknown>).message;
-    if (typeof dataMessage === "string" && dataMessage.length > 0) {
-      return dataMessage;
-    }
-  }
-
-  const nestedError = record.error;
-  if (nestedError && typeof nestedError === "object") {
-    const nestedRecord = nestedError as Record<string, unknown>;
-    const nestedMessage = nestedRecord.message;
-    if (typeof nestedMessage === "string" && nestedMessage.length > 0) {
-      return nestedMessage;
-    }
-    const nestedData = nestedRecord.data;
-    if (nestedData && typeof nestedError === "object") {
-      const nestedDataMessage = (nestedData as Record<string, unknown>).message;
-      if (typeof nestedDataMessage === "string" && nestedDataMessage.length > 0) {
-        return nestedDataMessage;
-      }
-    }
-  }
-
-  try {
-    return JSON.stringify(error);
-  } catch {
-    return String(error);
-  }
-};
-
-const getResponseStatus = (result: unknown): number | undefined => {
-  if (!result || typeof result !== "object") return undefined;
-  const response = (result as { response?: { status?: unknown } }).response;
-  return typeof response?.status === "number" ? response.status : undefined;
-};
 
 export function useMessageQueue(deps: {
   sync: ReturnType<typeof useSync>;

@@ -14,18 +14,14 @@ import { useSessionDrafts } from "./hooks/useSessionDrafts";
 import { useAttachments, type SelectionAttachment } from "./hooks/useAttachments";
 import { useMentionInsertion } from "./hooks/useMentionInsertion";
 import { useMessageQueue, type QueuedMessage } from "./hooks/useMessageQueue";
+import { usePromptSend } from "./hooks/usePromptSend";
 import { useSync } from "./state/sync";
 import type { Message, Agent, Session, Permission, Model } from "./types";
 import { parseHostMessage } from "./types";
 import type { ModelSelection } from "./utils/modelResolution";
 
 import { vscode } from "./utils/vscode";
-import { Id } from "./utils/id";
 import { logger } from "./utils/logger";
-import { extractMentions } from "./utils/editorContent";
-import {
-  parseFileMentionReference,
-} from "./utils/fileMentionReference";
 
 function App() {
   // Use the sync context for server-owned state
@@ -101,53 +97,6 @@ function App() {
   // Slash commands
   const [commands, setCommands] = createSignal<CommandItem[]>([]);
 
-  const getSdkErrorMessage = (error: unknown): string => {
-    if (typeof error === "string" && error.length > 0) return error;
-    if (!error || typeof error !== "object") return "Unknown error";
-
-    const record = error as Record<string, unknown>;
-    const topLevelMessage = record.message;
-    if (typeof topLevelMessage === "string" && topLevelMessage.length > 0) {
-      return topLevelMessage;
-    }
-
-    const data = record.data;
-    if (data && typeof data === "object") {
-      const dataMessage = (data as Record<string, unknown>).message;
-      if (typeof dataMessage === "string" && dataMessage.length > 0) {
-        return dataMessage;
-      }
-    }
-
-    const nestedError = record.error;
-    if (nestedError && typeof nestedError === "object") {
-      const nestedRecord = nestedError as Record<string, unknown>;
-      const nestedMessage = nestedRecord.message;
-      if (typeof nestedMessage === "string" && nestedMessage.length > 0) {
-        return nestedMessage;
-      }
-      const nestedData = nestedRecord.data;
-      if (nestedData && typeof nestedData === "object") {
-        const nestedDataMessage = (nestedData as Record<string, unknown>).message;
-        if (typeof nestedDataMessage === "string" && nestedDataMessage.length > 0) {
-          return nestedDataMessage;
-        }
-      }
-    }
-
-    try {
-      return JSON.stringify(error);
-    } catch {
-      return String(error);
-    }
-  };
-
-  const getResponseStatus = (result: unknown): number | undefined => {
-    if (!result || typeof result !== "object") return undefined;
-    const response = (result as { response?: { status?: unknown } }).response;
-    return typeof response?.status === "number" ? response.status : undefined;
-  };
-  
   // Derive current session title from store
   const isDefaultTitle = (title: string) => /^(New session|Child session) - \d{4}-\d{2}-\d{2}T/.test(title);
   const currentSessionTitle = createMemo(() => {
@@ -398,149 +347,33 @@ function App() {
     });
   });
 
-  // Handlers
-  const handleSubmit = async () => {
-    const text = input().trim();
-    if (!text || !sync.isReady()) {
-      return;
-    }
-
-    const agent = agents().some((a) => a.name === selectedAgent())
-      ? selectedAgent()
-      : null;
-    const attachmentsKey = sessionKey();
-    let attachments = selectionAttachments();
-    
-    // Extract mentions from editor and add to attachments
-    const methods = mentionHook.editorMethods();
-    if (methods) {
-      try {
-        const editorJSON = methods.getJSON();
-        const mentionedFiles = extractMentions(editorJSON);
-        const workspaceRoot = sync.workspaceRoot();
-        if (!workspaceRoot) {
-          throw new Error("workspace root unavailable while extracting mentions");
-        }
-        
-        // Convert mention references to SelectionAttachment objects
-        const mentionAttachments: SelectionAttachment[] = mentionedFiles
-          .map((mentionReference) => {
-            const parsedMention = parseFileMentionReference(mentionReference);
-            if (!parsedMention.filePath) return null;
-            const attachment: SelectionAttachment = {
-              id: `mention-${mentionReference}`,
-              filePath: parsedMention.filePath,
-              fileUrl: buildWorkspaceFileUrl(workspaceRoot, parsedMention.filePath),
-            };
-            if (parsedMention.startLine !== undefined) attachment.startLine = parsedMention.startLine;
-            if (parsedMention.endLine !== undefined) attachment.endLine = parsedMention.endLine;
-            return attachment;
-          })
-          .filter((attachment): attachment is SelectionAttachment => attachment !== null);
-        
-        // Merge with existing attachments (avoid exact duplicates)
-        const attachmentKey = (attachment: SelectionAttachment) =>
-          `${attachment.filePath}:${attachment.startLine ?? ""}:${attachment.endLine ?? ""}`;
-        const existingKeys = new Set(attachments.map(attachmentKey));
-        const newAttachments = mentionAttachments.filter(
-          (attachment) => !existingKeys.has(attachmentKey(attachment))
-        );
-        attachments = [...attachments, ...newAttachments];
-      } catch (err) {
-        logger.error("Failed to extract mentions", { error: err });
-      }
-    }
-    
-    const extraParts = buildSelectionParts(attachments);
-    const currentImages = imageAttachments();
-    const imageParts = buildImageParts(currentImages);
-    const allExtraParts = [...extraParts, ...imageParts];
-
-    // Generate sortable client-side messageID for idempotent sends
-    const messageID = Id.ascending("message");
-
-    // Ensure we have a session
-    let sessionId = sync.currentSessionId();
-    if (!sessionId) {
-      try {
-        const res = await createSession();
-        const newSession = res?.data as Session | undefined;
-        if (!newSession?.id) {
-          logger.error("Failed to create session");
-          return;
-        }
-        sessionId = newSession.id;
-        sync.setCurrentSessionId(sessionId);
-      } catch (err) {
-        logger.error("Failed to create session:", { error: err });
-        return;
-      }
-    }
-
-    // Clear both text and JSON content
-    setInput("");
-    if (methods) {
-      methods.clear();
-    }
-    clearDraftContent(sessionKey());
-    sync.setThinking(sessionId, true);
-
-    // Track this message as in-flight
-    setInFlightMessage({ messageID, sessionId });
-
-    logger.info("Sending prompt", { sessionId, messageID, textLen: text.length });
-
-    try {
-      const result = await sendPrompt(sessionId, text, agent, allExtraParts, messageID, selectedModel());
-      
-      // Log the full result for debugging
-      const responseStatus = getResponseStatus(result);
-      logger.info("sendPrompt result", { 
-        hasError: !!result?.error, 
-        hasData: !!result?.data,
-        responseStatus,
-      });
-      
-      // Check for SDK error in result (SDK doesn't throw by default)
-      if (result?.error) {
-        const errorMessage = getSdkErrorMessage(result.error);
-
-        // Log full error structure for debugging
-        logger.error("sendPrompt returned error", { 
-          sessionId,
-          messageID,
-          responseStatus,
-          errorMessage,
-          error: result.error,
-          response: result?.response,
-        });
-
-        sync.setThinking(sessionId, false);
-        setInFlightMessage(null);
-        sync.setSessionError(sessionId, errorMessage);
-        return;
-      }
-      
-      if (attachments.length > 0) {
-        setSelectionAttachmentsForKey(attachmentsKey, []);
-      }
-      if (currentImages.length > 0) {
-        setImageAttachmentsBySession((prev) => {
-          const next = new Map(prev);
-          next.delete(attachmentsKey);
-          return next;
-        });
-      }
-    } catch (err) {
-      logger.error("sendPrompt exception", { error: String(err), stack: (err as Error).stack });
-      const errorMessage = (err as Error).message;
-      
-      // Show all errors inline and clear in-flight
-      sync.setThinking(sessionId, false);
-      setInFlightMessage(null);
-      sync.setSessionError(sessionId, errorMessage);
-    }
-  };
+  // Prompt send hook
+  const { handleSubmit, handleCommandSelect, handleSubmitEdit } = usePromptSend({
+    sync,
+    sendPrompt,
+    sendCommand,
+    revertToMessage,
+    createSession,
+    selectedModel,
+    selectedAgent,
+    agents,
+    input,
+    setInput,
+    clearDraftContent,
+    sessionKey,
+    editorMethods: mentionHook.editorMethods,
+    selectionAttachments,
+    setSelectionAttachmentsForKey,
+    imageAttachments,
+    setImageAttachmentsBySession,
+    buildSelectionParts,
+    buildImageParts,
+    buildWorkspaceFileUrl,
+    setInFlightMessage,
+    editingMessageId,
+    setEditingMessageId,
+    setEditingText,
+  });
 
   const handleSessionSelect = async (sessionId: string) => {
     if (!sync.isReady()) return;
@@ -598,41 +431,6 @@ function App() {
     }
   };
 
-  const handleCommandSelect = async (command: CommandItem) => {
-    let sessionId = sync.currentSessionId();
-    if (!sessionId) {
-      try {
-        const res = await createSession();
-        const newSession = res?.data as Session | undefined;
-        if (!newSession?.id) return;
-        sessionId = newSession.id;
-        sync.setCurrentSessionId(sessionId);
-      } catch (err) {
-        logger.error("Failed to create session for command:", { error: err });
-        return;
-      }
-    }
-
-    // Clear editor
-    setInput("");
-    const editor = mentionHook.editorMethods();
-    if (editor) editor.clear();
-    clearDraftContent(sessionKey());
-    sync.setThinking(sessionId, true);
-
-    try {
-      const result = await sendCommand(sessionId, command.name);
-      if (result?.error) {
-        const errorMessage = getSdkErrorMessage(result.error);
-        sync.setThinking(sessionId, false);
-        sync.setSessionError(sessionId, errorMessage);
-      }
-    } catch (err) {
-      sync.setThinking(sessionId, false);
-      sync.setSessionError(sessionId, (err as Error).message);
-    }
-  };
-
   const handleModelSelect = (providerID: string, modelID: string) => {
     setSelectedModel({ providerID, modelID });
   };
@@ -645,57 +443,6 @@ function App() {
   const handleCancelEdit = () => {
     setEditingMessageId(null);
     setEditingText("");
-  };
-
-  const handleSubmitEdit = async (newText: string) => {
-    const messageId = editingMessageId();
-    const sessionId = sync.currentSessionId();
-    if (!messageId || !sessionId || !newText.trim() || !sync.isReady()) return;
-
-    const agent = agents().some((a) => a.name === selectedAgent())
-      ? selectedAgent()
-      : null;
-
-    // Generate sortable client-side messageID for the new prompt
-    const newMessageID = Id.ascending("message");
-
-    sync.setThinking(sessionId, true);
-    setEditingMessageId(null);
-    setEditingText("");
-
-    // Track this as in-flight
-    setInFlightMessage({ messageID: newMessageID, sessionId });
-
-    try {
-      await revertToMessage(sessionId, messageId);
-      const result = await sendPrompt(sessionId, newText.trim(), agent, [], newMessageID, selectedModel());
-      const responseStatus = getResponseStatus(result);
-      
-      // Check for SDK error in result (SDK doesn't throw by default)
-      if (result?.error) {
-        const errorMessage = getSdkErrorMessage(result.error);
-        logger.error("edit sendPrompt returned error", {
-          sessionId,
-          messageId,
-          newMessageID,
-          responseStatus,
-          errorMessage,
-          error: result.error,
-        });
-        sync.setThinking(sessionId, false);
-        setInFlightMessage(null);
-        sync.setSessionError(sessionId, `Error editing message: ${errorMessage}`);
-        return;
-      }
-    } catch (err) {
-      logger.error("Failed to edit message:", { error: err });
-      const errorMessage = (err as Error).message;
-      
-      // Show all errors inline and clear in-flight
-      sync.setThinking(sessionId, false);
-      setInFlightMessage(null);
-      sync.setSessionError(sessionId, `Error editing message: ${errorMessage}`);
-    }
   };
 
   const handlePermissionResponse = async (
