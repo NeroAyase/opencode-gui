@@ -17,7 +17,7 @@ export default defineConfig({
   },
   build: {
     outDir: 'out',
-    minify: false,
+    minify: 'esbuild',
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'src/webview/index.html'),
@@ -28,6 +28,14 @@ export default defineConfig({
         assetFileNames: (assetInfo) => {
           if (assetInfo.name === 'style.css') return 'main.css';
           return assetInfo.name || 'asset';
+        },
+        manualChunks(id) {
+          if (id.includes('shiki') || id.includes('@shikijs') || id.includes('oniguruma')) {
+            return 'shiki-vendor';
+          }
+          if (id.includes('prosemirror') || id.includes('tiptap')) {
+            return 'editor-vendor';
+          }
         }
       }
     },

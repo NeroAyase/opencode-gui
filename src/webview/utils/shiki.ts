@@ -1,6 +1,51 @@
-import { createHighlighter, type Highlighter, type BundledLanguage } from "shiki";
+import { createHighlighterCore } from "shiki/core";
+import { createOnigurumaEngine } from "shiki/engine/oniguruma";
 
-let highlighterPromise: Promise<Highlighter> | null = null;
+type HighlighterCore = Awaited<ReturnType<typeof createHighlighterCore>>;
+
+// Import ONLY the languages actually used
+import langTs from "shiki/langs/typescript.mjs";
+import langJs from "shiki/langs/javascript.mjs";
+import langPython from "shiki/langs/python.mjs";
+import langBash from "shiki/langs/bash.mjs";
+import langJson from "shiki/langs/json.mjs";
+import langCss from "shiki/langs/css.mjs";
+import langHtml from "shiki/langs/html.mjs";
+import langMd from "shiki/langs/markdown.mjs";
+import langTsx from "shiki/langs/tsx.mjs";
+import langJsx from "shiki/langs/jsx.mjs";
+import langGo from "shiki/langs/go.mjs";
+import langRust from "shiki/langs/rust.mjs";
+import langJava from "shiki/langs/java.mjs";
+import langC from "shiki/langs/c.mjs";
+import langCpp from "shiki/langs/cpp.mjs";
+import langYaml from "shiki/langs/yaml.mjs";
+import langToml from "shiki/langs/toml.mjs";
+import langDiff from "shiki/langs/diff.mjs";
+import langSql from "shiki/langs/sql.mjs";
+import langXml from "shiki/langs/xml.mjs";
+import langDockerfile from "shiki/langs/dockerfile.mjs";
+import langIni from "shiki/langs/ini.mjs";
+import langPerl from "shiki/langs/perl.mjs";
+import langRuby from "shiki/langs/ruby.mjs";
+import langPhp from "shiki/langs/php.mjs";
+import langSwift from "shiki/langs/swift.mjs";
+import langKotlin from "shiki/langs/kotlin.mjs";
+import langScala from "shiki/langs/scala.mjs";
+import langLua from "shiki/langs/lua.mjs";
+import langR from "shiki/langs/r.mjs";
+import langDart from "shiki/langs/dart.mjs";
+import langVue from "shiki/langs/vue.mjs";
+import langSvelte from "shiki/langs/svelte.mjs";
+import langShell from "shiki/langs/shellscript.mjs";
+
+// Import ONLY the themes actually used
+import themeGithubDark from "shiki/themes/github-dark.mjs";
+import themeGithubLight from "shiki/themes/github-light.mjs";
+
+type SupportedLang = string;
+
+let highlighterPromise: Promise<HighlighterCore> | null = null;
 
 const SUPPORTED_LANGS: readonly string[] = [
   "typescript", "javascript", "python", "bash", "json", "css", "html",
@@ -26,15 +71,20 @@ const LANG_ALIASES: ReadonlyMap<string, string> = new Map([
   ["docker", "dockerfile"],
 ]);
 
-export async function getHighlighter(): Promise<Highlighter> {
+const LANG_REGISTRY = [
+  langTs, langJs, langPython, langBash, langJson, langCss, langHtml,
+  langMd, langTsx, langJsx, langGo, langRust, langJava, langC, langCpp,
+  langYaml, langToml, langDiff, langSql, langXml, langDockerfile, langIni,
+  langPerl, langRuby, langPhp, langSwift, langKotlin, langScala, langLua,
+  langR, langDart, langVue, langSvelte, langShell,
+];
+
+export async function getHighlighter(): Promise<HighlighterCore> {
   if (!highlighterPromise) {
-    highlighterPromise = createHighlighter({
-      themes: ["github-dark", "github-light"],
-      langs: [
-        "typescript", "javascript", "python", "bash", "json", "css", "html",
-        "markdown", "tsx", "jsx", "go", "rust", "java", "c", "cpp", "yaml",
-        "toml", "diff",
-      ],
+    highlighterPromise = createHighlighterCore({
+      themes: [themeGithubDark, themeGithubLight],
+      langs: LANG_REGISTRY,
+      engine: createOnigurumaEngine(import("shiki/wasm")),
     });
   }
   return highlighterPromise;
@@ -50,12 +100,12 @@ export function isValidLang(lang: string): boolean {
   return VALID_LANG_SET.has(resolved);
 }
 
-export function detectLanguage(code: string, hint?: string): BundledLanguage {
+export function detectLanguage(code: string, hint?: string): SupportedLang {
   // If hint is provided and valid, use it
   if (hint) {
     const resolved = resolveAlias(hint);
     if (VALID_LANG_SET.has(resolved)) {
-      return resolved as BundledLanguage;
+      return resolved as SupportedLang;
     }
   }
 
@@ -67,7 +117,7 @@ export function detectLanguage(code: string, hint?: string): BundledLanguage {
   if (code.includes("func ") && code.includes(":=")) return "go";
   if (code.includes("fn ") && code.includes("->")) return "rust";
 
-  return "plaintext" as BundledLanguage;
+  return "plaintext" as SupportedLang;
 }
 
 export function getThemeForVSCode(): string {

@@ -39,7 +39,7 @@ export default defineConfig({
       },
     },
     sourcemap: true,
-    minify: false,
+    minify: 'esbuild',
     target: 'node18',
     emptyOutDir: true,
   },
