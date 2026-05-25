@@ -175,6 +175,24 @@ describe("WebviewMessageSchema", () => {
   it("rejects unknown message type", () => {
     expect(() => WebviewMessageSchema.parse({ type: "unknown" })).toThrow();
   });
+
+  it("parses session-changed message with string sessionID", () => {
+    const msg = { type: "session-changed", sessionID: "s1" };
+    expect(WebviewMessageSchema.parse(msg)).toEqual(msg);
+  });
+
+  it("parses session-changed message with null sessionID", () => {
+    const msg = { type: "session-changed", sessionID: null };
+    expect(WebviewMessageSchema.parse(msg)).toEqual(msg);
+  });
+
+  it("rejects session-changed message with missing sessionID", () => {
+    expect(() => WebviewMessageSchema.parse({ type: "session-changed" })).toThrow();
+  });
+
+  it("rejects session-changed message with undefined sessionID", () => {
+    expect(() => WebviewMessageSchema.parse({ type: "session-changed", sessionID: undefined })).toThrow();
+  });
 });
 
 describe("parseHostMessage", () => {
