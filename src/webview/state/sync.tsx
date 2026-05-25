@@ -22,6 +22,7 @@ import { type SyncState, type SyncStatus, createEmptyState } from "./types";
 import { applyEvent, type EventHandlerContext } from "./eventHandlers";
 import { fetchBootstrapData, commitBootstrapData } from "./bootstrap";
 import { logger } from "../utils/logger";
+import { vscode } from "../utils/vscode";
 
 export type { SyncStatus } from "./types";
 
@@ -74,7 +75,10 @@ function createSync() {
 
   function setCurrentSessionId(id: string | null) {
     const prevId = currentSessionId();
-    if (prevId && prevId !== id) {
+    // No-op guard: skip if session hasn't changed
+    if (prevId === id) return;
+
+    if (prevId) {
       const prevMessages = store.message[prevId] ?? [];
       batch(() => {
         setStore("message", produce((draft) => { delete draft[prevId]; }));
@@ -91,6 +95,10 @@ function createSync() {
       }
     }
     setCurrentSessionIdInternal(id);
+
+    // Notify extension host of session change (NOT sent on init path
+    // which uses setCurrentSessionIdInternal directly)
+    vscode.postMessage({ type: "session-changed", sessionID: id });
   }
 
   // Plain function (NOT createMemo) so that every reactive consumer directly
