@@ -1,4 +1,5 @@
-- [ ] Restoring selected session on tab switch. What's best way to store session?
+- [x] Restoring selected session on tab switch
+  - ✅ Complete (commits a82aaef, dac0060, a1ac49c, 0c35e67). workspaceState persistence + session-changed message + validateSessionId.
 - [x] Image support (copy/paste, drag in)
 - [ ] @-mentions
   - Supports skills, files, sub-agents, slash commands
