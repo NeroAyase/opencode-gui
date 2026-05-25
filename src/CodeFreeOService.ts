@@ -145,6 +145,11 @@ export class CodeFreeOService {
     return this.currentSessionId;
   }
 
+  setCurrentSessionId(id: string | null): void {
+    if (this.currentSessionId === id) return; // no-op guard
+    this.currentSessionId = id;
+  }
+
   getCurrentSessionTitle(): string {
     return this.currentSessionTitle;
   }
@@ -191,5 +196,35 @@ export class CodeFreeOService {
 
   getClient(): OpencodeClient | undefined {
     return this.codefreeO?.client;
+  }
+
+  /**
+   * Validate that a session ID exists and belongs to the current workspace.
+   * Uses raw SDK session.list (not UI-filtered) so forked/reverted sessions
+   * are not incorrectly rejected.
+   * Returns the validated session ID, or null if invalid.
+   */
+  async validateSessionId(sessionId: string): Promise<string | null> {
+    if (!this.codefreeO) return null;
+
+    try {
+      const result = await this.codefreeO.client.session.list({
+        directory: this.workspaceDir,
+      });
+
+      if (result.error || !result.data) return null;
+
+      const session = result.data.find((s) => s.id === sessionId);
+      if (!session) return null;
+
+      // Verify session belongs to current workspace
+      if (this.workspaceDir && session.directory !== this.workspaceDir) {
+        return null;
+      }
+
+      return sessionId;
+    } catch {
+      return null;
+    }
   }
 }
