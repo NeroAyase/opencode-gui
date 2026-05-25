@@ -295,22 +295,30 @@ export class CodeFreeOViewProvider implements vscode.WebviewViewProvider, vscode
       // Restore order per Codex review:
       // 1. Check service in-memory state first
       // 2. Fall back to workspaceState persistence
-      // 3. Validate candidate session ID against raw SDK session list
+      // 3. Validate ANY candidate session ID against raw SDK session list
       let currentSessionId = this._codefreeOService.getCurrentSessionId();
 
       if (!currentSessionId) {
-        const persistedId = this._workspaceState.get<string>(LAST_SESSION_KEY);
-        if (persistedId) {
-          const validatedId = await this._codefreeOService.validateSessionId(persistedId);
-          if (validatedId) {
-            currentSessionId = validatedId;
-            this._codefreeOService.setCurrentSessionId(validatedId);
-          } else {
-            // Invalid or stale — clear persistence
-            await this._workspaceState.update(LAST_SESSION_KEY, undefined);
-            const logger = getLogger();
-            logger.info("[ViewProvider] Clealed stale persisted session:", { persistedId });
-          }
+        // No in-memory value — try workspaceState
+        currentSessionId = this._workspaceState.get<string>(LAST_SESSION_KEY) ?? null;
+      }
+
+      // Validate whatever candidate we have (in-memory or persisted)
+      if (currentSessionId) {
+        const candidateId = currentSessionId;
+        const validatedId = await this._codefreeOService.validateSessionId(candidateId);
+        if (validatedId) {
+          // Valid — ensure both service and workspaceState are in sync
+          this._codefreeOService.setCurrentSessionId(validatedId);
+          await this._workspaceState.update(LAST_SESSION_KEY, validatedId);
+          currentSessionId = validatedId;
+        } else {
+          // Invalid — clear both service and workspaceState, fallback to undefined
+          this._codefreeOService.setCurrentSessionId(null);
+          await this._workspaceState.update(LAST_SESSION_KEY, undefined);
+          currentSessionId = null;
+          const logger = getLogger();
+          logger.info("[ViewProvider] Cleared stale persisted session:", { candidateId });
         }
       }
 
