@@ -168,6 +168,9 @@ export class CodeFreeOViewProvider implements vscode.WebviewViewProvider, vscode
       case "command-list":
         await this._handleCommandList();
         break;
+      case "skills-list":
+        await this._handleSkillsList();
+        break;
       case "command-execute":
         await this._handleCommandExecute(message);
         break;
@@ -619,6 +622,56 @@ export class CodeFreeOViewProvider implements vscode.WebviewViewProvider, vscode
       this._sendMessage({
         type: "command-list-result",
         commands: [],
+      });
+    }
+  }
+
+  private async _handleSkillsList() {
+    const client = this._codefreeOService.getClient();
+    if (!client) {
+      this._sendMessage({
+        type: "skills-list-result",
+        skills: [],
+      });
+      return;
+    }
+
+    try {
+      const dir = this._codefreeOService.getWorkspaceRoot();
+      const result = await client.app.skills(dir ? { directory: dir } : undefined);
+
+      const logger = getLogger();
+      logger.info("[ViewProvider] Skills list raw response", {
+        dataShape: result.data
+          ? { length: Array.isArray(result.data) ? result.data.length : "not-array", sampleKeys: Array.isArray(result.data) && result.data.length > 0 ? Object.keys(result.data[0]) : [] }
+          : "no-data",
+        error: result.error ?? "no-error",
+      });
+
+      if (result.error || !result.data) {
+        this._sendMessage({
+          type: "skills-list-result",
+          skills: [],
+        });
+        return;
+      }
+
+      const skills = result.data.map((skill) => ({
+        name: skill.name,
+        description: skill.description,
+        location: skill.location,
+      }));
+
+      this._sendMessage({
+        type: "skills-list-result",
+        skills,
+      });
+    } catch (error) {
+      const logger = getLogger();
+      logger.error("[ViewProvider] Failed to fetch skills list", { error });
+      this._sendMessage({
+        type: "skills-list-result",
+        skills: [],
       });
     }
   }

@@ -11,6 +11,7 @@ import {
   PermissionSchema,
   ContextInfoSchema,
   FileChangesInfoSchema,
+  SkillSchema,
 } from "./messages";
 
 describe("ToolStateSchema", () => {
@@ -235,5 +236,65 @@ describe("parseWebviewMessage", () => {
     const result = parseWebviewMessage({ type: "agent-changed" });
     expect(result).toBeNull();
     vi.restoreAllMocks();
+  });
+});
+
+describe("SkillSchema", () => {
+  it("parses minimal skill (name only)", () => {
+    const skill = { name: "review-work" };
+    expect(SkillSchema.parse(skill)).toEqual({ name: "review-work" });
+  });
+
+  it("parses full skill with all fields", () => {
+    const skill = {
+      name: "review-work",
+      description: "Expert code review",
+      location: "file:///home/user/.claude/skills/review-work/SKILL.md",
+    };
+    expect(SkillSchema.parse(skill)).toEqual(skill);
+  });
+
+  it("rejects skill without name", () => {
+    expect(() => SkillSchema.parse({ description: "No name" })).toThrow();
+  });
+
+  it("rejects malformed entries with wrong types", () => {
+    expect(() => SkillSchema.parse({ name: 123 })).toThrow();
+    expect(() => SkillSchema.parse({ name: "ok", description: 456 })).toThrow();
+    expect(() => SkillSchema.parse(null)).toThrow();
+    expect(() => SkillSchema.parse("not an object")).toThrow();
+  });
+});
+
+describe("skills-list WebviewMessage", () => {
+  it("parses skills-list message", () => {
+    const msg = { type: "skills-list" };
+    expect(WebviewMessageSchema.parse(msg)).toEqual({ type: "skills-list" });
+  });
+});
+
+describe("skills-list-result HostMessage", () => {
+  it("parses skills-list-result with valid skills array", () => {
+    const msg = {
+      type: "skills-list-result",
+      skills: [
+        { name: "review-work", description: "Code review" },
+        { name: "commit", description: "Git commit", location: "file:///skills/commit/SKILL.md" },
+      ],
+    };
+    expect(HostMessageSchema.parse(msg)).toEqual(msg);
+  });
+
+  it("parses skills-list-result with empty skills array", () => {
+    const msg = { type: "skills-list-result", skills: [] };
+    expect(HostMessageSchema.parse(msg)).toEqual(msg);
+  });
+
+  it("rejects skills-list-result with invalid skill entries", () => {
+    const msg = {
+      type: "skills-list-result",
+      skills: [{ description: "Missing name field" }],
+    };
+    expect(() => HostMessageSchema.parse(msg)).toThrow();
   });
 });

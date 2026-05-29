@@ -1,7 +1,7 @@
 import { createSignal } from "solid-js";
 import type { TiptapEditorMethods } from "../components/TiptapEditor";
 import { logger } from "../utils/logger";
-import { extractMentions } from "../utils/editorContent";
+import { extractMentionIds } from "../utils/editorContent";
 import { encodeFileMentionReference } from "../utils/fileMentionReference";
 
 export interface FileMentionInsertRequest {
@@ -49,7 +49,7 @@ export function useMentionInsertion(): {
     }
 
     try {
-      const existingMentions = new Set(extractMentions(editorMethods.getJSON()));
+      const existingMentions = new Set(extractMentionIds(editorMethods.getJSON()));
       const requestKey = mentionInsertionKey(request);
       if (!existingMentions.has(requestKey)) {
         editorMethods.insertFileMention(request.filePath, request.startLine, request.endLine);

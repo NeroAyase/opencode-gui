@@ -14,6 +14,7 @@ export type {
   QuestionInfo,
   QuestionRequest,
   Model,
+  Skill,
 } from "../shared/messages";
 
 export {
@@ -31,4 +32,5 @@ export {
   WebviewMessageSchema,
   parseHostMessage,
   parseWebviewMessage,
+  SkillSchema,
 } from "../shared/messages";

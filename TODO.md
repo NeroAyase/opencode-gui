@@ -3,6 +3,18 @@
 - [x] Image support (copy/paste, drag in)
 - [ ] @-mentions
   - Supports skills, files, sub-agents, slash commands
+  - **Phase 0 (SDK Verification)**: ✅ Static verification + host plumbing complete
+    - `client.app.skills()` wired up in `CodeFreeOViewProvider._handleSkillsList()` with raw response logging
+    - `SkillSchema` + `Skill` type added to `src/shared/messages.ts`
+    - `"skills-list"` / `"skills-list-result"` message types added
+    - SDK static analysis confirmed: `AgentPartInput`, `client.app.skills()`, `Command.source: "skill"` all available
+    - ⚠️ Runtime verification: `client.app.skills()` call is wired but **pending real VSCode/manual execution** to confirm server response shape
+  - **Phase 1 (Foundation Types)**: ✅ Complete
+    - `src/webview/utils/mention.ts` — `MentionKind`, `MentionItem` union, `MentionRef`, `getMentionKind()`, `parseMentionId()`, `formatMentionId()`
+    - `src/webview/utils/editorContent.ts` — `extractMentions()` returns `MentionRef[]` with kind discrimination; `extractMentionIds()` legacy helper; `extractFileMentionIds()` for send path
+    - `usePromptSend.ts` — uses `extractFileMentionIds()` to prevent agent/skill ids from reaching `parseFileMentionReference()`
+    - 26 new/updated tests passing (16 mention.test.ts + 10 editorContent.test.ts)
+  - **Phase 2+**: Not started — awaiting review
 - [x] Modes: for slash commands
   - Type slash, convert to slash command auto complete mode
 - [ ] Shell mode

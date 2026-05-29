@@ -156,6 +156,13 @@ export const CommandSchema = z.object({
 });
 export type Command = z.infer<typeof CommandSchema>;
 
+export const SkillSchema = z.object({
+  name: z.string(),
+  description: z.string().optional(),
+  location: z.string().optional(),
+});
+export type Skill = z.infer<typeof SkillSchema>;
+
 export const ModelCapabilitiesSchema = z.object({
   attachment: z.boolean(),
   reasoning: z.boolean(),
@@ -276,6 +283,10 @@ export const HostMessageSchema = z.discriminatedUnion("type", [
     commands: z.array(CommandSchema),
   }),
   z.object({
+    type: z.literal("skills-list-result"),
+    skills: z.array(SkillSchema),
+  }),
+  z.object({
     type: z.literal("provider-list-result"),
     providers: z.array(
       z.object({
@@ -387,6 +398,9 @@ export const WebviewMessageSchema = z.discriminatedUnion("type", [
   }),
   z.object({
     type: z.literal("command-list"),
+  }),
+  z.object({
+    type: z.literal("skills-list"),
   }),
   z.object({
     type: z.literal("command-execute"),

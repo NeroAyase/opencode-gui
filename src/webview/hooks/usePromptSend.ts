@@ -8,7 +8,7 @@ import type { FilePartInput } from "@srdcloud/codefree-o-sdk/v2/client";
 import { useSync } from "../state/sync";
 import { Id } from "../utils/id";
 import { logger } from "../utils/logger";
-import { extractMentions } from "../utils/editorContent";
+import { extractFileMentionIds } from "../utils/editorContent";
 import { parseFileMentionReference } from "../utils/fileMentionReference";
 
 // ---------------------------------------------------------------------------
@@ -120,7 +120,7 @@ export function usePromptSend(deps: {
     if (methods) {
       try {
         const editorJSON = methods.getJSON();
-        const mentionedFiles = extractMentions(editorJSON);
+        const mentionedFiles = extractFileMentionIds(editorJSON);
         const workspaceRoot = deps.sync.workspaceRoot();
         if (!workspaceRoot) {
           throw new Error("workspace root unavailable while extracting mentions");
