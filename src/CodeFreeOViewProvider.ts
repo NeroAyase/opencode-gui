@@ -12,6 +12,10 @@ import type {
 import { parseWebviewMessage } from "./shared/messages";
 import { parseFileReferenceTarget } from "./shared/fileReferences";
 import {
+  filterAgentsForMention,
+  filterSkillsForMention,
+} from "./shared/mentionSearch";
+import {
   SseClient,
   SseConnectionState,
   SseEvent,
@@ -159,6 +163,12 @@ export class CodeFreeOViewProvider implements vscode.WebviewViewProvider, vscode
       case "search-files":
         await this._handleSearchFiles(message.query);
         break;
+      case "search-agents":
+        await this._handleSearchAgents(message.query);
+        break;
+      case "search-skills":
+        await this._handleSearchSkills(message.query);
+        break;
       case "select-model":
         await this._handleSelectModel();
         break;
@@ -290,6 +300,82 @@ export class CodeFreeOViewProvider implements vscode.WebviewViewProvider, vscode
         type: "search-files-result",
         files: [],
       });
+    }
+  }
+
+  private async _handleSearchAgents(query: string) {
+    const client = this._codefreeOService.getClient();
+    if (!client) {
+      this._sendMessage({ type: "search-agents-result", agents: [] });
+      return;
+    }
+
+    try {
+      const result = await client.app.agents();
+      if (result.error || !result.data) {
+        this._sendMessage({ type: "search-agents-result", agents: [] });
+        return;
+      }
+
+      const agents = filterAgentsForMention(result.data, query);
+
+      const logger = getLogger();
+      logger.info("[ViewProvider] Agent search complete", {
+        query,
+        total: result.data.length,
+        filtered: agents.length,
+      });
+
+      this._sendMessage({ type: "search-agents-result", agents });
+    } catch (error) {
+      const logger = getLogger();
+      logger.error("[ViewProvider] Failed to search agents", { query, error });
+      this._sendMessage({ type: "search-agents-result", agents: [] });
+    }
+  }
+
+  private async _handleSearchSkills(query: string) {
+    const client = this._codefreeOService.getClient();
+    if (!client) {
+      this._sendMessage({ type: "search-skills-result", skills: [] });
+      return;
+    }
+
+    try {
+      const dir = this._codefreeOService.getWorkspaceRoot();
+      const result = await client.app.skills(dir ? { directory: dir } : undefined);
+
+      const logger = getLogger();
+      logger.info("[ViewProvider] Skills search raw response", {
+        dataShape: result.data
+          ? { length: Array.isArray(result.data) ? result.data.length : "not-array", sampleKeys: Array.isArray(result.data) && result.data.length > 0 ? Object.keys(result.data[0]) : [] }
+          : "no-data",
+        error: result.error ?? "no-error",
+      });
+
+      if (result.error || !result.data || !Array.isArray(result.data)) {
+        logger.warn("[ViewProvider] Skills search: unexpected response shape, returning empty", {
+          hasData: !!result.data,
+          isArray: Array.isArray(result.data),
+          error: result.error,
+        });
+        this._sendMessage({ type: "search-skills-result", skills: [] });
+        return;
+      }
+
+      const skills = filterSkillsForMention(result.data, query);
+
+      logger.info("[ViewProvider] Skills search complete", {
+        query,
+        total: result.data.length,
+        filtered: skills.length,
+      });
+
+      this._sendMessage({ type: "search-skills-result", skills });
+    } catch (error) {
+      const logger = getLogger();
+      logger.error("[ViewProvider] Failed to search skills", { query, error });
+      this._sendMessage({ type: "search-skills-result", skills: [] });
     }
   }
 

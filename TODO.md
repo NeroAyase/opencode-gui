@@ -14,7 +14,13 @@
     - `src/webview/utils/editorContent.ts` — `extractMentions()` returns `MentionRef[]` with kind discrimination; `extractMentionIds()` legacy helper; `extractFileMentionIds()` for send path
     - `usePromptSend.ts` — uses `extractFileMentionIds()` to prevent agent/skill ids from reaching `parseFileMentionReference()`
     - 26 new/updated tests passing (16 mention.test.ts + 10 editorContent.test.ts)
-  - **Phase 2+**: Not started — awaiting review
+  - **Phase 2 (Host-side Search Providers)**: ✅ Complete
+    - `src/shared/messages.ts` — Added `MentionAgentSchema`, `search-agents`/`search-skills` WebviewMessage, `search-agents-result`/`search-skills-result` HostMessage
+    - `src/shared/mentionSearch.ts` — Pure filter functions: `filterAgentsForMention()` (excludes hidden, includes subagents, query filter, top 20), `filterSkillsForMention()` (query filter on name/desc/location, malformed graceful, top 20)
+    - `src/CodeFreeOViewProvider.ts` — Added `_handleSearchAgents()`, `_handleSearchSkills()`, wired switch cases
+    - Runtime verification: `client.app.skills()` raw response logging preserved; if response shape unexpected, returns empty array with blocker log
+    - 36 new tests (15 message schema + 21 filter function)
+  - **Phase 3+**: Not started — awaiting review
 - [x] Modes: for slash commands
   - Type slash, convert to slash command auto complete mode
 - [ ] Shell mode

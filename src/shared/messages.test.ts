@@ -12,6 +12,7 @@ import {
   ContextInfoSchema,
   FileChangesInfoSchema,
   SkillSchema,
+  MentionAgentSchema,
 } from "./messages";
 
 describe("ToolStateSchema", () => {
@@ -294,6 +295,106 @@ describe("skills-list-result HostMessage", () => {
     const msg = {
       type: "skills-list-result",
       skills: [{ description: "Missing name field" }],
+    };
+    expect(() => HostMessageSchema.parse(msg)).toThrow();
+  });
+});
+
+describe("MentionAgentSchema", () => {
+  it("parses agent with all fields", () => {
+    const agent = { name: "build", description: "Build agent", mode: "subagent" };
+    expect(MentionAgentSchema.parse(agent)).toEqual(agent);
+  });
+
+  it("parses agent without description", () => {
+    const agent = { name: "coder", mode: "primary" };
+    expect(MentionAgentSchema.parse(agent)).toEqual(agent);
+  });
+
+  it("rejects agent without mode", () => {
+    expect(() => MentionAgentSchema.parse({ name: "test" })).toThrow();
+  });
+});
+
+describe("search-agents WebviewMessage", () => {
+  it("parses search-agents message with query", () => {
+    const msg = { type: "search-agents", query: "build" };
+    expect(WebviewMessageSchema.parse(msg)).toEqual(msg);
+  });
+
+  it("parses search-agents message with empty query", () => {
+    const msg = { type: "search-agents", query: "" };
+    expect(WebviewMessageSchema.parse(msg)).toEqual(msg);
+  });
+
+  it("rejects search-agents without query", () => {
+    expect(() => WebviewMessageSchema.parse({ type: "search-agents" })).toThrow();
+  });
+});
+
+describe("search-skills WebviewMessage", () => {
+  it("parses search-skills message with query", () => {
+    const msg = { type: "search-skills", query: "review" };
+    expect(WebviewMessageSchema.parse(msg)).toEqual(msg);
+  });
+
+  it("parses search-skills message with empty query", () => {
+    const msg = { type: "search-skills", query: "" };
+    expect(WebviewMessageSchema.parse(msg)).toEqual(msg);
+  });
+
+  it("rejects search-skills without query", () => {
+    expect(() => WebviewMessageSchema.parse({ type: "search-skills" })).toThrow();
+  });
+});
+
+describe("search-agents-result HostMessage", () => {
+  it("parses with agents array", () => {
+    const msg = {
+      type: "search-agents-result",
+      agents: [
+        { name: "build", description: "Build agent", mode: "subagent" },
+        { name: "coder", mode: "primary" },
+      ],
+    };
+    expect(HostMessageSchema.parse(msg)).toEqual(msg);
+  });
+
+  it("parses with empty agents array", () => {
+    const msg = { type: "search-agents-result", agents: [] };
+    expect(HostMessageSchema.parse(msg)).toEqual(msg);
+  });
+
+  it("rejects with invalid agent entries", () => {
+    const msg = {
+      type: "search-agents-result",
+      agents: [{ description: "Missing name and mode" }],
+    };
+    expect(() => HostMessageSchema.parse(msg)).toThrow();
+  });
+});
+
+describe("search-skills-result HostMessage", () => {
+  it("parses with skills array", () => {
+    const msg = {
+      type: "search-skills-result",
+      skills: [
+        { name: "review-work", description: "Code review" },
+        { name: "commit", location: "file:///skills/commit/SKILL.md" },
+      ],
+    };
+    expect(HostMessageSchema.parse(msg)).toEqual(msg);
+  });
+
+  it("parses with empty skills array", () => {
+    const msg = { type: "search-skills-result", skills: [] };
+    expect(HostMessageSchema.parse(msg)).toEqual(msg);
+  });
+
+  it("rejects with invalid skill entries", () => {
+    const msg = {
+      type: "search-skills-result",
+      skills: [{ description: "Missing name" }],
     };
     expect(() => HostMessageSchema.parse(msg)).toThrow();
   });

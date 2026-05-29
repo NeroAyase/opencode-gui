@@ -156,6 +156,13 @@ export const CommandSchema = z.object({
 });
 export type Command = z.infer<typeof CommandSchema>;
 
+export const MentionAgentSchema = z.object({
+  name: z.string(),
+  description: z.string().optional(),
+  mode: z.enum(["subagent", "primary", "all"]),
+});
+export type MentionAgent = z.infer<typeof MentionAgentSchema>;
+
 export const SkillSchema = z.object({
   name: z.string(),
   description: z.string().optional(),
@@ -287,6 +294,14 @@ export const HostMessageSchema = z.discriminatedUnion("type", [
     skills: z.array(SkillSchema),
   }),
   z.object({
+    type: z.literal("search-agents-result"),
+    agents: z.array(MentionAgentSchema),
+  }),
+  z.object({
+    type: z.literal("search-skills-result"),
+    skills: z.array(SkillSchema),
+  }),
+  z.object({
     type: z.literal("provider-list-result"),
     providers: z.array(
       z.object({
@@ -401,6 +416,14 @@ export const WebviewMessageSchema = z.discriminatedUnion("type", [
   }),
   z.object({
     type: z.literal("skills-list"),
+  }),
+  z.object({
+    type: z.literal("search-agents"),
+    query: z.string(),
+  }),
+  z.object({
+    type: z.literal("search-skills"),
+    query: z.string(),
   }),
   z.object({
     type: z.literal("command-execute"),
